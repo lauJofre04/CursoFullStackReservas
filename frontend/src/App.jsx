@@ -1,11 +1,29 @@
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { LoginPage } from './pages/LoginPage';
+import { RegisterPage } from './pages/RegisterPage';
+import { PanelPage } from './pages/PanelPage';
+import { ProtectedRoute } from './components/ProtectedRoute'; // Importamos al patovica
+
 function App() {
   return (
-    <div className="min-h-screen bg-red-100 flex items-center justify-center">
-      <h1 className="text-4xl font-bold text-red-700 underline">
-        ¡Vite + React + Tailwind funcionando!
-      </h1>
-    </div>
-  )
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        
+        {/* RUTA PROTEGIDA */}
+        <Route 
+          path="/panel" 
+          element={
+            <ProtectedRoute>
+              <PanelPage />
+            </ProtectedRoute>
+          } 
+        />
+      </Routes>
+    </BrowserRouter>
+  );
 }
 
-export default App
+export default App;
