@@ -37,6 +37,15 @@ public class InscripcionController {
 
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
+    // POST /api/inscripciones/matricular/{cursoId}
+    @PostMapping("/matricular/{cursoId}")
+    public ResponseEntity<Map<String, String>> matricularse(@PathVariable Long cursoId) {
+        inscripcionService.matricularse(cursoId);
+        
+        Map<String, String> response = new HashMap<>();
+        response.put("mensaje", "¡Te has inscripto con éxito! Ya podés acceder al contenido.");
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
     // GET /api/inscripciones/mis-cursos
     @GetMapping("/mis-cursos")
     public ResponseEntity<List<CursoInscritoDTO>> obtenerMisCursos() {

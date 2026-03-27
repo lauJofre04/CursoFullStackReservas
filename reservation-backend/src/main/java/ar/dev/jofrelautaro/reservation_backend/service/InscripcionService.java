@@ -71,4 +71,27 @@ public class InscripcionService {
                 .build()
         ).collect(Collectors.toList());
     }
+    // NUEVO MÉTODO: El alumno se matricula a sí mismo
+    public Inscripcion matricularse(Long cursoId) {
+        // 1. Sacamos el mail del token de forma segura
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        Curso curso = cursoRepository.findByIdAndActivoTrue(cursoId)
+                .orElseThrow(() -> new RuntimeException("El curso no existe o no está activo"));
+
+        if (inscripcionRepository.existsByUsuarioAndCurso(usuario, curso)) {
+            throw new RuntimeException("Ya te encontrás inscripto en este curso");
+        }
+
+        Inscripcion nuevaInscripcion = Inscripcion.builder()
+                .usuario(usuario)
+                .curso(curso)
+                .metodoAcceso(ar.dev.jofrelautaro.reservation_backend.model.entity.MetodoAcceso.PAGO_ONLINE)
+                .build();
+
+        return inscripcionRepository.save(nuevaInscripcion);
+    }
 }

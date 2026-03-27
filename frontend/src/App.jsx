@@ -5,6 +5,7 @@ import { PanelPage } from './pages/PanelPage';
 import { HomePage } from './pages/HomePage';
 import { Navbar } from './components/Navbar';
 import { CursoDetallePage } from './pages/CursoDetalle';
+import { MisCursosPage } from './pages/MisCursosPage';
 import { ProtectedRoute } from './components/ProtectedRoute'; 
 
 
@@ -25,6 +26,14 @@ function App() {
           element={
             <ProtectedRoute>
               <PanelPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/mis-cursos" 
+          element={
+            <ProtectedRoute>
+              <MisCursosPage />
             </ProtectedRoute>
           } 
         />

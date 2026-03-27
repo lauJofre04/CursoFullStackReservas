@@ -35,6 +35,12 @@ export const Navbar = () => {
             {isAuthenticated ? (
               <>
                 <Link 
+                  to="/mis-cursos" 
+                  className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md font-medium transition-colors"
+                >
+                  Mis Cursos
+                </Link>
+                <Link 
                   to="/panel" 
                   className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md font-medium transition-colors"
                 >

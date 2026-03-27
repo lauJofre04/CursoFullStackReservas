@@ -1,14 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import clienteAxios from '../api/axiosConfig';
+import { useNavigate } from 'react-router-dom';
 
 export const CursoDetallePage = () => {
   // Atrapamos el ID que viene en la URL
   const { id } = useParams();
+  const navigate = useNavigate();
   
   const [curso, setCurso] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(false);
+  // estos dos estados para manejar el botón y el cartelito
+  const [inscribiendo, setInscribiendo] = useState(false);
+  const [alerta, setAlerta] = useState(null);
 
   useEffect(() => {
     const obtenerDetalleCurso = async () => {
@@ -27,6 +32,30 @@ export const CursoDetallePage = () => {
     obtenerDetalleCurso();
   }, [id]); // El useEffect se vuelve a ejecutar si cambia el ID
 
+
+  const handleInscripcion = async () => {
+    setInscribiendo(true);
+    setAlerta(null);
+    
+    try {
+      const response = await clienteAxios.post(`/inscripciones/matricular/${id}`);
+      
+      // Si salió bien, mostramos mensaje verde
+      setAlerta({ tipo: 'exito', texto: response.data.mensaje });
+      
+      // Magia de UX: Lo mandamos a "Mis Cursos" después de 2 segundos
+      setTimeout(() => {
+        navigate('/mis-cursos');
+      }, 2000);
+
+    } catch (error) {
+      // Gracias al GlobalExceptionHandler del backend, el error llega limpio acá
+      const mensajeError = error.response?.data?.mensaje || "Ocurrió un error al inscribirse";
+      setAlerta({ tipo: 'error', texto: mensajeError });
+    } finally {
+      setInscribiendo(false);
+    }
+  };
   if (cargando) return <div className="text-center mt-20 text-xl font-bold text-gray-600">Cargando detalles... ⏳</div>;
   if (error || !curso) return <div className="text-center mt-20 text-xl font-bold text-red-600">No pudimos encontrar este curso ❌</div>;
 
@@ -67,9 +96,26 @@ export const CursoDetallePage = () => {
             </div>
             
             <div className="flex flex-col space-y-3">
-              <button className="w-full bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 transition-colors shadow-md text-lg">
-                Inscribirme Ahora
+              {/* CARTEL DE ALERTA DINÁMICO */}
+              {alerta && (
+                <div className={`p-4 mb-6 rounded-lg font-bold text-center transition-all ${
+                  alerta.tipo === 'exito' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                }`}>
+                  {alerta.texto}
+                </div>
+              )}
+
+              {/* BOTÓN DE INSCRIPCIÓN */}
+              <button 
+                onClick={handleInscripcion}
+                disabled={inscribiendo}
+                className={`w-full py-4 text-xl font-bold rounded-xl transition-colors text-white ${
+                  inscribiendo ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+                }`}
+              >
+                {inscribiendo ? 'Procesando inscripción... ⏳' : '¡Inscribirme Ahora! 🚀'}
               </button>
+
               <Link to="/home" className="w-full text-center text-gray-500 font-semibold py-3 hover:bg-gray-50 rounded-xl transition-colors">
                 Volver a la vidriera
               </Link>
