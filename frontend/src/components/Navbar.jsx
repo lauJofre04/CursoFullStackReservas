@@ -1,77 +1,83 @@
+import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+// Asegurate de que la ruta a tu AuthContext sea la correcta
+import { useAuth } from '../context/AuthContext'; 
 
 export const Navbar = () => {
+  // 🔥 Magia real: sacamos los datos y la función de cierre directamente de tu contexto global
+  const { usuario, logout } = useAuth();
+  
+  const [menuAbierto, setMenuAbierto] = useState(false);
+  const menuRef = useRef(null);
   const navigate = useNavigate();
-  // Chequeamos si hay un token guardado para saber si el usuario está logueado
-  const isAuthenticated = !!localStorage.getItem('token');
+
+  useEffect(() => {
+    const handleClickFuera = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setMenuAbierto(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickFuera);
+    return () => document.removeEventListener('mousedown', handleClickFuera);
+  }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
+    logout(); // Limpia el localStorage y el estado global
+    setMenuAbierto(false);
     navigate('/login');
   };
 
   return (
-    <nav className="bg-white shadow-md sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16 items-center">
-          
-          {/* Logo / Nombre de la App */}
-          <div className="flex-shrink-0 flex items-center">
-            <Link to="/home" className="text-2xl font-black text-blue-600 tracking-tight">
-              Dev<span className="text-gray-800">Cursos</span>
-            </Link>
-          </div>
+    <nav className="bg-white shadow px-6 py-4 flex justify-between items-center z-40 relative">
+      <div className="font-extrabold text-2xl text-blue-600 tracking-tight">
+        <Link to="/">DevCursos</Link>
+      </div>
 
-          {/* Botones de Navegación */}
-          <div className="flex items-center space-x-4">
-            <Link 
-              to="/home" 
-              className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md font-medium transition-colors"
-            >
-              Cursos
+      <div className="relative" ref={menuRef}>
+        <button 
+          onClick={() => setMenuAbierto(!menuAbierto)}
+          className="flex items-center focus:outline-none transition-transform hover:scale-105"
+        >
+          {usuario?.fotoPerfilUrl ? (
+            <img 
+              src={usuario.fotoPerfilUrl} 
+              alt="Avatar" 
+              className="w-10 h-10 rounded-full object-cover border-2 border-blue-500"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold border-2 border-blue-500">
+              {usuario?.nombre?.charAt(0).toUpperCase() || 'U'}
+            </div>
+          )}
+        </button>
+
+        {menuAbierto && (
+          <div className="absolute right-0 mt-3 w-56 bg-white rounded-xl shadow-xl py-2 border border-gray-100 z-50">
+            <div className="px-4 py-3 border-b border-gray-100 mb-1">
+              <p className="text-xs text-gray-500 uppercase font-semibold">Sesión iniciada como</p>
+              <p className="text-sm font-bold text-gray-900 truncate mt-0.5">{usuario?.nombre}</p>
+            </div>
+            
+            <Link to="/mis-cursos" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600" onClick={() => setMenuAbierto(false)}>
+              Mis Cursos
+            </Link>
+            <Link to="/perfil" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600" onClick={() => setMenuAbierto(false)}>
+              Mi Perfil
             </Link>
 
-            {/* Renderizado Condicional: Si está logueado mostramos el Panel, si no, Login/Registro */}
-            {isAuthenticated ? (
-              <>
-                <Link 
-                  to="/mis-cursos" 
-                  className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md font-medium transition-colors"
-                >
-                  Mis Cursos
-                </Link>
-                <Link 
-                  to="/panel" 
-                  className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md font-medium transition-colors"
-                >
-                  Mi Panel
-                </Link>
-                <button 
-                  onClick={handleLogout}
-                  className="bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 px-4 py-2 rounded-lg font-semibold transition-colors"
-                >
-                  Salir
-                </button>
-              </>
-            ) : (
-              <>
-                <Link 
-                  to="/login" 
-                  className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md font-medium transition-colors"
-                >
-                  Ingresar
-                </Link>
-                <Link 
-                  to="/register" 
-                  className="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-lg font-semibold transition-colors shadow-sm"
-                >
-                  Registrarse
-                </Link>
-              </>
+            {/* Renderizado condicional estricto por ROL */}
+            {usuario?.rol === 'ADMIN' && (
+              <Link to="/admin-panel" className="block px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50 mt-1" onClick={() => setMenuAbierto(false)}>
+                Panel Admin
+              </Link>
             )}
-          </div>
 
-        </div>
+            <div className="border-t border-gray-100 mt-2 mb-1"></div>
+            <button onClick={handleLogout} className="block w-full text-left px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50">
+              Cerrar Sesión
+            </button>
+          </div>
+        )}
       </div>
     </nav>
   );

@@ -7,7 +7,10 @@ import { Navbar } from './components/Navbar';
 import { CursoDetallePage } from './pages/CursoDetalle';
 import { MisCursosPage } from './pages/MisCursosPage';
 import { ProtectedRoute } from './components/ProtectedRoute'; 
-
+import { SolicitarRecuperacionPage } from './pages/SolicitarRecuperacion';
+import { CambiarPasswordPage } from './pages/CambiarPasswordPage';
+import { VerificarCuentaPage } from './pages/VerificarCuentaPage';
+import { PerfilUsuarioPage } from './pages/PerfilUsuario';
 
 function App() {
   return (
@@ -19,10 +22,11 @@ function App() {
         <Route path="/curso/:id" element={<CursoDetallePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        
 
         {/* RUTA PROTEGIDA */}
         <Route 
-          path="/panel" 
+          path="/admin-panel" 
           element={
             <ProtectedRoute>
               <PanelPage />
@@ -37,6 +41,10 @@ function App() {
             </ProtectedRoute>
           } 
         />
+        <Route path="/recuperar-password" element={<CambiarPasswordPage />} />
+        <Route path="/solicitar-recuperacion" element={<SolicitarRecuperacionPage />} />
+        <Route path="/verificar-cuenta" element={<VerificarCuentaPage />} />
+        <Route path="/perfil" element={<PerfilUsuarioPage />} />
       </Routes>
     </BrowserRouter>
   );
