@@ -31,6 +31,20 @@ public class Usuario implements UserDetails { // 🔥 Implementamos UserDetails
     @Column(nullable = false)
     private String password; 
 
+    @Column(name = "foto_perfil_url")
+    private String fotoPerfilUrl;
+
+    @Column(length = 500) // Le damos un poco más de espacio por si escriben mucho
+    private String biografia;
+
+    @Column(name = "telefono")
+    private String telefono;
+
+    @Column(name = "fecha_nacimiento")
+    private java.time.LocalDate fechaNacimiento; // Usamos LocalDate que es el estándar de Java 8+ para fechas sin hora
+
+    // ...
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Rol rol;
@@ -38,6 +52,10 @@ public class Usuario implements UserDetails { // 🔥 Implementamos UserDetails
     @Builder.Default
     @Column(nullable = false)
     private boolean activo = true; 
+    
+    @Builder.Default
+    @Column(name = "email_verificado")
+    private Boolean emailVerificado = false;
 
     // === MÉTODOS DE SPRING SECURITY ===
 
