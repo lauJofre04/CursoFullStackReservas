@@ -6,11 +6,15 @@ import { HomePage } from './pages/HomePage';
 import { Navbar } from './components/Navbar';
 import { CursoDetallePage } from './pages/CursoDetalle';
 import { MisCursosPage } from './pages/MisCursosPage';
+import { AulaVirtualPage } from './pages/AulaVirtualPage';
 import { ProtectedRoute } from './components/ProtectedRoute'; 
 import { SolicitarRecuperacionPage } from './pages/SolicitarRecuperacion';
 import { CambiarPasswordPage } from './pages/CambiarPasswordPage';
 import { VerificarCuentaPage } from './pages/VerificarCuentaPage';
 import { PerfilUsuarioPage } from './pages/PerfilUsuario';
+import { PagoExitoPage } from './pages/PagoExitoPage';
+import { PagoErrorPage } from './pages/PagoErrorPage';
+import { PagoPendientePage } from './pages/PagoPendientePage';
 
 function App() {
   return (
@@ -41,10 +45,23 @@ function App() {
             </ProtectedRoute>
           } 
         />
+        <Route 
+          path="/aula/:cursoId" 
+          element={
+            <ProtectedRoute>
+              <AulaVirtualPage />
+            </ProtectedRoute>
+          } 
+        />
         <Route path="/recuperar-password" element={<CambiarPasswordPage />} />
         <Route path="/solicitar-recuperacion" element={<SolicitarRecuperacionPage />} />
         <Route path="/verificar-cuenta" element={<VerificarCuentaPage />} />
         <Route path="/perfil" element={<PerfilUsuarioPage />} />
+        
+        {/* RUTAS DE PAGO MERCADO PAGO */}
+        <Route path="/pago/exito" element={<PagoExitoPage />} />
+        <Route path="/pago/error" element={<PagoErrorPage />} />
+        <Route path="/pago/pendiente" element={<PagoPendientePage />} />
       </Routes>
     </BrowserRouter>
   );

@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import clienteAxios from '../api/axiosConfig';
 
 export const MisCursosPage = () => {
   const [misCursos, setMisCursos] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const obtenerMisCursos = async () => {
@@ -67,6 +68,7 @@ export const MisCursosPage = () => {
                   </p>
                   
                   <button 
+                    onClick={() => navigate(`/aula/${curso.cursoId}`)}
                     disabled={curso.estado !== 'ACTIVA'}
                     className={`w-full py-3 rounded-lg font-bold transition-colors ${
                       curso.estado === 'ACTIVA' 

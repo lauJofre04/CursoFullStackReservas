@@ -6,6 +6,7 @@ import ar.dev.jofrelautaro.reservation_backend.model.entity.Usuario;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -16,6 +17,9 @@ public interface InscripcionRepository extends JpaRepository<Inscripcion, Long> 
     List<Inscripcion> findByUsuario(Usuario usuario);
     // Magia de Spring Data: Revisa si ya existe esta combinación exacta
     boolean existsByUsuarioAndCurso(Usuario usuario, Curso curso);
+    
+    // Buscar una inscripción específica de usuario y curso
+    Optional<Inscripcion> findByUsuarioAndCurso(Usuario usuario, Curso curso);
 
     List<Inscripcion> findByEstadoAndFechaInscripcionBefore(String estado, LocalDateTime fechaLimite);
 }

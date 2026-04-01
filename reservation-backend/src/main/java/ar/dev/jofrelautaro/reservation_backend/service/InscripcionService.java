@@ -94,4 +94,27 @@ public class InscripcionService {
 
         return inscripcionRepository.save(nuevaInscripcion);
     }
+
+    /**
+     * Matriz al usuario en un curso cuando se aprueba un pago
+     * Usado por el webhook de Mercado Pago
+     */
+    public Inscripcion matricularPorPago(Usuario usuario, Curso curso) {
+        // Validar que no esté ya inscrito
+        if (inscripcionRepository.existsByUsuarioAndCurso(usuario, curso)) {
+            System.out.println("⚠️ El usuario ya está inscrito en este curso");
+            return inscripcionRepository.findByUsuarioAndCurso(usuario, curso).get();
+        }
+
+        Inscripcion nuevaInscripcion = Inscripcion.builder()
+                .usuario(usuario)
+                .curso(curso)
+                .metodoAcceso(ar.dev.jofrelautaro.reservation_backend.model.entity.MetodoAcceso.PAGO_ONLINE)
+                .estado("ACTIVA")
+                .build();
+
+        Inscripcion inscripcionGuardada = inscripcionRepository.save(nuevaInscripcion);
+        System.out.println("✅ Usuario matriculado exitosamente - Inscripción ID: " + inscripcionGuardada.getId());
+        return inscripcionGuardada;
+    }
 }

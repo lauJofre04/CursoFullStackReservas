@@ -25,9 +25,9 @@ export const LoginPage = () => {
       // 3. Lo guardamos en el LocalStorage (la memoria del navegador)
       localStorage.setItem('token', token);
 
-      // 4. Redirigimos al usuario al sistema (por ahora a un panel temporal)
+      // 4. Redirigimos al usuario al home
       alert("¡Login exitoso! Ya tenés tu pase VIP.");
-      navigate('/panel'); // Más adelante crearemos esta página
+      navigate('/'); // Redirige a home
 
     } catch (err) {
       console.error(err);
