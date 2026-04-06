@@ -98,6 +98,8 @@ public class MercadoPagoService {
 
         // 6. Llamamos a la API de Mercado Pago
         try {
+            MercadoPagoConfig.setAccessToken(mercadoPagoProperties.getAccessToken());
+            
             PreferenceClient client = new PreferenceClient();
             Preference preference = client.create(preferenceRequest);
             

@@ -8,7 +8,10 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "cursos")
@@ -47,4 +50,9 @@ public class Curso {
     @UpdateTimestamp
     @Column(name = "fecha_actualizacion")
     private LocalDateTime fechaActualizacion;
+
+    // Adentro de Curso.java
+    @OneToMany(mappedBy = "curso", cascade = CascadeType.ALL)
+    @JsonIgnore // Evitamos que se serialice la lista de evaluaciones para no crear un ciclo infinito
+    private List<Evaluacion> evaluaciones;
 }

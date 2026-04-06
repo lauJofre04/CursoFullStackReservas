@@ -15,6 +15,8 @@ import { PerfilUsuarioPage } from './pages/PerfilUsuario';
 import { PagoExitoPage } from './pages/PagoExitoPage';
 import { PagoErrorPage } from './pages/PagoErrorPage';
 import { PagoPendientePage } from './pages/PagoPendientePage';
+import { CrearEvaluacion } from './components/CrearEvaluacion';
+import { RendirEvaluacion } from './components/RendirEvaluacion';
 
 function App() {
   return (
@@ -57,6 +59,8 @@ function App() {
         <Route path="/solicitar-recuperacion" element={<SolicitarRecuperacionPage />} />
         <Route path="/verificar-cuenta" element={<VerificarCuentaPage />} />
         <Route path="/perfil" element={<PerfilUsuarioPage />} />
+        <Route path="/crear-evaluacion" element={<CrearEvaluacion />} />
+        <Route path='/evaluacion/:evaluacionId' element={<RendirEvaluacion />} />
         
         {/* RUTAS DE PAGO MERCADO PAGO */}
         <Route path="/pago/exito" element={<PagoExitoPage />} />

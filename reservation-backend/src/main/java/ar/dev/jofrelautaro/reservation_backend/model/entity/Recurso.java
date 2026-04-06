@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -26,6 +28,7 @@ public class Recurso {
     // Relación con la Lección
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "leccion_id", nullable = false)
+    @JsonIgnore
     private Leccion leccion;
 
     // Tipo de recurso: VIDEO, PDF, LINK, DOCUMENTO

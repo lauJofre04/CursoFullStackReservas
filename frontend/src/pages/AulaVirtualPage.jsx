@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import clienteAxios from '../api/axiosConfig';
 import { useAuth } from '../context/AuthContext';
 import { GestorModulos } from '../components/GestorModulos';
+import { CrearEvaluacion } from '../components/CrearEvaluacion';
 
 export const AulaVirtualPage = () => {
   const { cursoId } = useParams();
@@ -15,6 +16,9 @@ export const AulaVirtualPage = () => {
   const [error, setError] = useState(null);
   const [sidebarAbierta, setSidebarAbierta] = useState(true);
   const [modoEdicion, setModoEdicion] = useState(false);
+  const [vistaAdmin, setVistaAdmin] = useState(false);
+  const [evaluaciones, setEvaluaciones] = useState([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     cargarDatos();
@@ -32,6 +36,10 @@ export const AulaVirtualPage = () => {
       const modulosResponse = await clienteAxios.get(`/modulos/curso/${cursoId}`);
       const modulosData = Array.isArray(modulosResponse.data) ? modulosResponse.data : [];
       setModulos(modulosData);
+      
+      // Cargar evaluaciones del curso
+      const evalResponse = await clienteAxios.get(`/evaluaciones/curso/${cursoId}`);
+      setEvaluaciones(evalResponse.data);
 
       // Seleccionar primera lección automáticamente
       if (modulosData.length > 0 && modulosData[0].lecciones && modulosData[0].lecciones.length > 0) {
@@ -51,14 +59,6 @@ export const AulaVirtualPage = () => {
     } finally {
       setCargando(false);
     }
-  };
-
-  const obtenerleccionPorId = (leccionId) => {
-    for (let modulo of modulos) {
-      const leccion = modulo.lecciones?.find(l => l.id === leccionId);
-      if (leccion) return leccion;
-    }
-    return null;
   };
 
   const handleSeleccionarLeccion = async (leccionId) => {
@@ -101,23 +101,55 @@ export const AulaVirtualPage = () => {
     );
   }
 
-  // Si es admin y está en modo edición, mostrar el GestorModulos
+  // Si es admin y está en modo edición, mostrar el Panel de Gestión
   if (usuario?.rol === 'ADMIN' && modoEdicion) {
     return (
       <div className="min-h-screen bg-gray-100 p-8">
         <div className="max-w-7xl mx-auto">
-          <div className="flex justify-between items-center bg-white rounded-2xl shadow-sm p-6 mb-8">
-            <h1 className="text-3xl font-bold text-gray-800">📖 Gestionar Contenido</h1>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setModoEdicion(false)}
-                className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
-              >
-                👁️ Ver como Estudiante
-              </button>
-            </div>
+          {/* Cabecera Admin */}
+          <div className="flex justify-between items-center bg-white rounded-2xl shadow-sm p-6 mb-6">
+            <h1 className="text-3xl font-bold text-gray-800">⚙️ Gestionar Contenido</h1>
+            <button
+              onClick={() => {
+                setModoEdicion(false);
+                setVistaAdmin('modulos'); // Reseteamos la vista al salir
+              }}
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+            >
+              👁️ Ver como Estudiante
+            </button>
           </div>
-          <GestorModulos cursoId={parseInt(cursoId)} cursoTitulo={curso?.titulo || 'Curso'} />
+
+          {/* 🗂️ PESTAÑAS (TABS) */}
+          <div className="flex space-x-4 mb-6">
+            <button
+              onClick={() => setVistaAdmin('modulos')}
+              className={`px-6 py-3 rounded-xl font-bold transition-all shadow-sm ${
+                vistaAdmin === 'modulos' 
+                  ? 'bg-gray-800 text-white scale-105' 
+                  : 'bg-white text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              📚 Módulos y Lecciones
+            </button>
+            <button
+              onClick={() => setVistaAdmin('evaluaciones')}
+              className={`px-6 py-3 rounded-xl font-bold transition-all shadow-sm ${
+                vistaAdmin === 'evaluaciones' 
+                  ? 'bg-green-600 text-white scale-105' 
+                  : 'bg-white text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              📝 Crear Evaluaciones
+            </button>
+          </div>
+
+          {/* RENDERIZADO CONDICIONAL DE LA PESTAÑA */}
+          {vistaAdmin === 'modulos' ? (
+            <GestorModulos cursoId={parseInt(cursoId)} cursoTitulo={curso?.titulo || 'Curso'} />
+          ) : (
+            <CrearEvaluacion cursoIdPreseleccionado={parseInt(cursoId)} /> 
+          )}
         </div>
       </div>
     );
@@ -129,7 +161,7 @@ export const AulaVirtualPage = () => {
       <aside
         className={`${
           sidebarAbierta ? 'w-80' : 'w-0'
-        } overflow-x-hidden bg-gray-900 text-white transition-all duration-300 shadow-xl flex flex-col`}
+        } overflow-x-hidden bg-gray-900 text-white transition-all duration-300 shadow-xl flex flex-col shrink-0`}
       >
         <div className="p-6 border-b border-gray-700">
           <h2 className="text-xl font-bold truncate">📚 {curso?.titulo}</h2>
@@ -166,6 +198,27 @@ export const AulaVirtualPage = () => {
               </div>
             </div>
           ))}
+          
+          {/* MÓDULO ESPECIAL DE EXÁMENES */}
+          {evaluaciones.length > 0 && (
+            <div className="mb-2 mt-4 border-t border-gray-700 pt-4">
+              <div className="px-4 py-2 text-sm font-bold text-green-400 tracking-wide uppercase">
+                📝 Evaluaciones
+              </div>
+              <div className="space-y-1">
+                {evaluaciones.map((ev) => (
+                  <button
+                    key={ev.id}
+                    onClick={() => navigate(`/evaluacion/${ev.id}`)}
+                    className="w-full text-left px-6 py-3 text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-all flex items-center border-l-4 border-transparent hover:border-green-400"
+                  >
+                    <span className="mr-3 text-lg">🏆</span>
+                    <span className="truncate font-semibold">{ev.titulo}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </nav>
 
         {/* Pie de la Barra */}
@@ -180,8 +233,8 @@ export const AulaVirtualPage = () => {
       </aside>
 
       {/* ÁREA PRINCIPAL - CONTENIDO */}
-      <main className="flex-1 overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-gray-200 shadow-sm p-4 flex items-center justify-between gap-4">
+      <main className="flex-1 overflow-y-auto bg-white">
+        <div className="sticky top-0 bg-white border-b border-gray-200 shadow-sm p-4 flex items-center justify-between gap-4 z-10">
           <div className="flex items-center gap-4">
             {!sidebarAbierta && (
               <button
@@ -201,7 +254,7 @@ export const AulaVirtualPage = () => {
           {usuario?.rol === 'ADMIN' && (
             <button
               onClick={() => setModoEdicion(true)}
-              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded font-semibold transition"
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded font-semibold transition shadow-sm"
             >
               ⚙️ Editar Contenido
             </button>
@@ -213,7 +266,7 @@ export const AulaVirtualPage = () => {
             <ContenidoLeccion leccionId={leccionSeleccionada} recursoActual={recursoActual} setRecursoActual={setRecursoActual} />
           ) : (
             <div className="text-center py-12">
-              <p className="text-gray-600 text-lg">👈 Selecciona una lección del menú para empezar</p>
+              <p className="text-gray-600 text-lg font-medium">👈 Selecciona una lección del menú para empezar</p>
             </div>
           )}
         </div>
@@ -237,8 +290,11 @@ const ContenidoLeccion = ({ leccionId, recursoActual, setRecursoActual }) => {
       const response = await clienteAxios.get(`/lecciones/${leccionId}`);
       setLeccion(response.data);
 
-      if (response.data.recursos && response.data.recursos.length > 0 && !recursoActual) {
+      // Si cambió de lección y hay recursos, auto-seleccionar el primero
+      if (response.data.recursos && response.data.recursos.length > 0) {
         setRecursoActual(response.data.recursos[0]);
+      } else {
+        setRecursoActual(null);
       }
     } catch (err) {
       console.error('Error cargando lección:', err);
@@ -248,139 +304,100 @@ const ContenidoLeccion = ({ leccionId, recursoActual, setRecursoActual }) => {
   };
 
   if (cargando) {
-    return <div className="text-center text-gray-600">Cargando lección...</div>;
+    return <div className="text-center text-gray-600 mt-10">Cargando lección...</div>;
   }
 
   if (!leccion) {
-    return <div className="text-center text-gray-600">Lección no encontrada</div>;
+    return <div className="text-center text-gray-600 mt-10">Lección no encontrada</div>;
   }
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="max-w-5xl mx-auto pb-12">
       {/* ENCABEZADO DE LA LECCIÓN */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">📖 {leccion.titulo}</h1>
+      <div className="mb-6 border-b border-gray-200 pb-4">
+        <h1 className="text-3xl font-extrabold text-gray-900 mb-2">📖 {leccion.titulo}</h1>
         {leccion.duracionMinutos > 0 && (
-          <p className="text-gray-600 flex items-center gap-2">
-            <span>⏱️ Duración estimada: {leccion.duracionMinutos} minutos</span>
+          <p className="text-gray-500 font-medium flex items-center gap-2">
+            <span>⏱️ Duración estimada: {leccion.duracionMinutos} min</span>
           </p>
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* ÁREA PRINCIPAL - REPRODUCTOR/CONTENIDO */}
-        <div className="lg:col-span-2">
-          {recursoActual ? (
-            <VisualizadorRecurso recurso={recursoActual} />
-          ) : (
-            <div className="bg-gray-200 rounded-lg h-96 flex items-center justify-center">
-              <p className="text-gray-600 text-lg">No hay recursos para esta lección</p>
-            </div>
-          )}
-
-          {/* DESCRIPCIÓN DE LA LECCIÓN */}
-          {leccion.descripcion && (
-            <div className="mt-8 p-6 bg-blue-50 rounded-lg border border-blue-200">
-              <h3 className="text-lg font-semibold text-gray-800 mb-3">📝 Descripción</h3>
-              <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{leccion.descripcion}</p>
-            </div>
-          )}
+      {/* SELECTOR DE RECURSOS HORIZONTAL (Solo se muestra si hay más de 1 recurso) */}
+      {leccion.recursos && leccion.recursos.length > 1 && (
+        <div className="flex flex-wrap gap-3 mb-6 bg-gray-50 p-3 rounded-xl border border-gray-100">
+          <span className="text-sm font-bold text-gray-500 uppercase flex items-center mr-2">Recursos:</span>
+          {leccion.recursos.map((recurso) => (
+            <button
+              key={recurso.id}
+              onClick={() => setRecursoActual(recurso)}
+              className={`px-4 py-2 rounded-full text-sm font-bold transition-all shadow-sm flex items-center gap-2 ${
+                recursoActual?.id === recurso.id
+                  ? 'bg-blue-600 text-white ring-2 ring-blue-300 ring-offset-1'
+                  : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+              }`}
+            >
+              <span>
+                {recurso.tipo === 'VIDEO' && '🎥'}
+                {recurso.tipo === 'PDF' && '📄'}
+                {recurso.tipo === 'LINK' && '🔗'}
+                {recurso.tipo === 'DOCUMENTO' && '📋'}
+              </span>
+              {recurso.titulo}
+            </button>
+          ))}
         </div>
+      )}
 
-        {/* SIDEBAR DERECHO - LISTA DE RECURSOS */}
-        <aside className="lg:col-span-1">
-          <div className="sticky top-20 bg-white rounded-lg shadow-md overflow-hidden">
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-4">
-              <h3 className="text-white font-bold text-lg">📚 Recursos ({leccion.recursos?.length || 0})</h3>
-            </div>
-
-            {leccion.recursos && leccion.recursos.length > 0 ? (
-              <div className="divide-y max-h-96 overflow-y-auto">
-                {leccion.recursos.map((recurso) => (
-                  <button
-                    key={recurso.id}
-                    onClick={() => setRecursoActual(recurso)}
-                    className={`w-full text-left p-4 transition-all hover:bg-gray-100 ${
-                      recursoActual?.id === recurso.id
-                        ? 'bg-blue-100 border-l-4 border-blue-600'
-                        : ''
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <span className="text-2xl mt-1">
-                        {recurso.tipo === 'VIDEO' && '🎥'}
-                        {recurso.tipo === 'PDF' && '📄'}
-                        {recurso.tipo === 'LINK' && '🔗'}
-                        {recurso.tipo === 'DOCUMENTO' && '📋'}
-                      </span>
-                      <div>
-                        <p className="font-semibold text-gray-800 text-sm">{recurso.titulo}</p>
-                        <p className="text-xs text-gray-600 mt-1">{recurso.tipo}</p>
-                        {recurso.descripcion && (
-                          <p className="text-xs text-gray-600 mt-1 line-clamp-2">{recurso.descripcion}</p>
-                        )}
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="p-4 text-center text-gray-600">
-                <p>No hay recursos disponibles</p>
-              </div>
-            )}
+      {/* ÁREA DEL RECURSO (Ocupa todo el ancho disponible) */}
+      <div className="mb-8">
+        {recursoActual ? (
+          <VisualizadorRecurso recurso={recursoActual} />
+        ) : (
+          <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl h-48 flex items-center justify-center">
+            <p className="text-gray-500 font-medium">Esta lección aún no tiene recursos adjuntos.</p>
           </div>
-        </aside>
+        )}
       </div>
+
+      {/* DESCRIPCIÓN DE LA LECCIÓN */}
+      {leccion.descripcion && (
+        <div className="mt-8 p-6 bg-white rounded-xl shadow-sm border border-gray-100">
+          <h3 className="text-lg font-bold text-gray-800 mb-3 border-b pb-2">📝 Notas de la lección</h3>
+          <p className="text-gray-600 leading-relaxed whitespace-pre-wrap">{leccion.descripcion}</p>
+        </div>
+      )}
     </div>
   );
 };
 
-// Componente para visualizar el recurso (video, PDF, etc)
+// Componente para visualizar el recurso rediseñado
 const VisualizadorRecurso = ({ recurso }) => {
-  const [error, setError] = useState(null);
-
   const extraerVideoId = (url) => {
-    // Si es YouTube URL
     const youtubeMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})/);
-    if (youtubeMatch) {
-      return youtubeMatch[1];
-    }
-    // Si es Google Drive
+    if (youtubeMatch) return youtubeMatch[1];
     const driveMatch = url.match(/drive\.google\.com\/file\/d\/([\w-]+)/);
-    if (driveMatch) {
-      return driveMatch[1];
-    }
+    if (driveMatch) return driveMatch[1];
     return null;
   };
 
+  // --- VISTA VIDEO (Grande y central) ---
   if (recurso.tipo === 'VIDEO') {
     const videoId = extraerVideoId(recurso.urlRecurso);
-
     if (videoId && recurso.urlRecurso.includes('youtube')) {
       return (
-        <div className="w-full aspect-video rounded-lg overflow-hidden shadow-lg bg-black">
+        <div className="w-full aspect-video rounded-2xl overflow-hidden shadow-lg bg-black border border-gray-200">
           <iframe
-            width="100%"
-            height="100%"
-            src={`https://www.youtube.com/embed/${videoId}`}
-            title={recurso.titulo}
-            frameBorder="0"
+            width="100%" height="100%" src={`https://www.youtube.com/embed/${videoId}`}
+            title={recurso.titulo} frameBorder="0" allowFullScreen
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
           ></iframe>
         </div>
       );
     } else {
       return (
-        <div className="w-full aspect-video rounded-lg overflow-hidden shadow-lg bg-black">
-          <video
-            width="100%"
-            height="100%"
-            controls
-            src={recurso.urlRecurso}
-            className="w-full h-full"
-          >
+        <div className="w-full aspect-video rounded-2xl overflow-hidden shadow-lg bg-black border border-gray-200">
+          <video width="100%" height="100%" controls src={recurso.urlRecurso} className="w-full h-full">
             Tu navegador no soporta video
           </video>
         </div>
@@ -388,77 +405,55 @@ const VisualizadorRecurso = ({ recurso }) => {
     }
   }
 
-  if (recurso.tipo === 'PDF') {
-    return (
-      <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-        <div className="bg-red-500 text-white p-4 flex items-center gap-3">
-          <span className="text-3xl">📄</span>
-          <div>
-            <p className="font-bold">{recurso.titulo}</p>
-            <p className="text-sm opacity-90">PDF Document</p>
-          </div>
-        </div>
-        <div className="p-6 text-center">
-          <p className="text-gray-700 mb-4">
-            Abre el PDF en una nueva ventana para visualizarlo
-          </p>
-          <a
-            href={recurso.urlRecurso}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-block px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold"
-          >
-            📥 Abrir PDF
-          </a>
-        </div>
-      </div>
-    );
-  }
-
-  if (recurso.tipo === 'LINK') {
-    return (
-      <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-        <span className="text-6xl block mb-4">🔗</span>
-        <h3 className="text-2xl font-bold text-gray-800 mb-4">{recurso.titulo}</h3>
-        {recurso.descripcion && (
-          <p className="text-gray-600 mb-6 whitespace-pre-wrap">{recurso.descripcion}</p>
-        )}
-        <a
-          href={recurso.urlRecurso}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-block px-8 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold"
-        >
-          🌐 Ir al Link
-        </a>
-        <p className="text-sm text-gray-500 mt-4">{recurso.urlRecurso}</p>
-      </div>
-    );
-  }
-
-  if (recurso.tipo === 'DOCUMENTO') {
-    return (
-      <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-        <span className="text-6xl block mb-4">📋</span>
-        <h3 className="text-2xl font-bold text-gray-800 mb-4">{recurso.titulo}</h3>
-        {recurso.descripcion && (
-          <p className="text-gray-600 mb-6">{recurso.descripcion}</p>
-        )}
-        <a
-          href={recurso.urlRecurso}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-block px-8 py-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold"
-        >
-          📖 Abrir Documento
-        </a>
-      </div>
-    );
-  }
+  // --- VISTA LINK, PDF o DOCUMENTO (Tarjetas horizontales) ---
+  const esLink = recurso.tipo === 'LINK';
+  const esPdf = recurso.tipo === 'PDF';
+  
+  const iconConfig = {
+    'LINK': { emoji: '🔗', color: 'bg-blue-100 text-blue-600', btn: 'bg-blue-600 hover:bg-blue-700' },
+    'PDF': { emoji: '📄', color: 'bg-red-100 text-red-600', btn: 'bg-red-600 hover:bg-red-700' },
+    'DOCUMENTO': { emoji: '📋', color: 'bg-green-100 text-green-600', btn: 'bg-green-600 hover:bg-green-700' }
+  };
+  
+  const config = iconConfig[recurso.tipo] || iconConfig['LINK'];
 
   return (
-    <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-6 text-center">
-      <p className="text-yellow-800 font-semibold">Tipo de recurso no soportado</p>
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col sm:flex-row items-center justify-between gap-6 hover:shadow-md transition-shadow">
+      
+      {/* Icono y Textos alineados a la izquierda */}
+      <div className="flex items-center gap-5 flex-1 w-full overflow-hidden">
+        <div className={`shrink-0 w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shadow-inner ${config.color}`}>
+          {config.emoji}
+        </div>
+        
+        <div className="flex-1 overflow-hidden">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs font-bold text-gray-400 tracking-wider uppercase">{recurso.tipo}</span>
+          </div>
+          <h3 className="text-xl font-bold text-gray-800 truncate">{recurso.titulo}</h3>
+          
+          {recurso.descripcion && (
+            <p className="text-gray-500 text-sm mt-1 line-clamp-2">{recurso.descripcion}</p>
+          )}
+          
+          {esLink && (
+            <p className="text-gray-400 text-xs mt-2 truncate w-full max-w-md">
+              {recurso.urlRecurso}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Botón a la derecha */}
+      <a
+        href={recurso.urlRecurso}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`shrink-0 w-full sm:w-auto px-6 py-2.5 text-white rounded-xl transition-all font-bold shadow-sm flex items-center justify-center gap-2 ${config.btn}`}
+      >
+        {esPdf ? 'Abrir PDF' : esLink ? 'Visitar Enlace' : 'Abrir Documento'}
+        <span className="text-lg leading-none">↗</span>
+      </a>
     </div>
   );
 };

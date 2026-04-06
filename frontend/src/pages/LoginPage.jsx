@@ -1,33 +1,35 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import clienteAxios from '../api/axiosConfig'; // Importamos nuestro cliente Axios personalizado
+import clienteAxios from '../api/axiosConfig'; 
+import { useAuth } from '../context/AuthContext'; // 1. Importamos el contexto
 
 export const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState(''); // Estado para guardar mensajes de error
-  const navigate = useNavigate(); // Herramienta para cambiar de página
+  const [error, setError] = useState(''); 
+  const navigate = useNavigate(); 
+  
+  // 2. Extraemos la función login de nuestro estado global
+  const { login } = useAuth(); 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(''); // Limpiamos el error si el usuario vuelve a intentar
+    setError(''); 
 
     try {
-      // 1. Le tocamos la puerta al backend
       const response = await clienteAxios.post('/auth/login', {
         email,
         password
       });
 
-      // 2. Si nos deja pasar, agarramos el token de la respuesta
       const token = response.data.token;
       
-      // 3. Lo guardamos en el LocalStorage (la memoria del navegador)
-      localStorage.setItem('token', token);
+      // 3. ¡LA MAGIA! Usamos la función del contexto en lugar de localStorage a mano.
+      // Esto guarda el token Y actualiza el estado global de React al instante.
+      login(token);
 
-      // 4. Redirigimos al usuario al home
       alert("¡Login exitoso! Ya tenés tu pase VIP.");
-      navigate('/'); // Redirige a home
+      navigate('/'); 
 
     } catch (err) {
       console.error(err);
@@ -43,7 +45,6 @@ export const LoginPage = () => {
           Iniciar Sesión
         </h2>
 
-        {/* Si hay un error, lo mostramos en un cartelito rojo */}
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4 text-sm text-center">
             {error}

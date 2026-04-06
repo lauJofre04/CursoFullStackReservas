@@ -1,6 +1,7 @@
 package ar.dev.jofrelautaro.reservation_backend.service;
 
 import ar.dev.jofrelautaro.reservation_backend.model.dto.CursoRequest;
+import ar.dev.jofrelautaro.reservation_backend.model.dto.CursoResponseDTO;
 import ar.dev.jofrelautaro.reservation_backend.model.entity.Curso;
 import ar.dev.jofrelautaro.reservation_backend.repository.CursoRepository;
 import lombok.RequiredArgsConstructor;
@@ -10,7 +11,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -59,6 +62,21 @@ public class CursoService {
     public Curso obtenerCursoPorId(Long id) {
         return cursoRepository.findByIdAndActivoTrue(id)
                 .orElseThrow(() -> new RuntimeException("Curso no encontrado o ha sido eliminado"));
+    }
+    // Asegurate de importar CursoResponseDTO y java.util.stream.Collectors
+
+    public List<CursoResponseDTO> obtenerTodos() {
+        return cursoRepository.findAll().stream().map(curso -> 
+            CursoResponseDTO.builder()
+                .id(curso.getId())
+                .titulo(curso.getTitulo())
+                .descripcion(curso.getDescripcion())
+                .precio(curso.getPrecio())
+                .imagen(curso.getImagen())
+                // 👇 ACÁ ESTÁ EL CAMBIO
+                .activo(curso.getActivo()) 
+                .build()
+        ).collect(Collectors.toList());
     }
 
     // U - Actualizar

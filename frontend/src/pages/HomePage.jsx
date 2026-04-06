@@ -10,20 +10,21 @@ export const HomePage = () => {
 
   // El useEffect se ejecuta una sola vez cuando el componente se monta en pantalla
   useEffect(() => {
-    const obtenerCursos = async () => {
+    const fetchCursos = async () => {
       try {
-        const response = await clienteAxios.get('/cursos');
-        // ¡Atención acá! Como pusimos paginación, los cursos están adentro de ".content"
-        setCursos(response.data.content);
-        setCargando(false);
-      } catch (err) {
-        console.error("Error al traer los cursos:", err);
-        setError(true);
-        setCargando(false);
+        const res = await clienteAxios.get('/cursos');
+        console.log("Lo que responde el backend:", res.data); // 👀 ¡Agregá esto!
+        
+        // Si ves en la consola que tus cursos están adentro de un "content", cambialo a esto:
+        setCursos(res.data.content || res.data || []);
+      } catch (error) {
+        console.error("Error al cargar cursos:", error);
+        setCursos([]); // Si falla, nos aseguramos de que sea un array vacío
+      } finally {
+        setCargando(false); // Terminamos de cargar, sea éxito o error
       }
     };
-
-    obtenerCursos();
+    fetchCursos();
   }, []);
 
   if (cargando) return <div className="text-center mt-20 text-xl font-bold text-gray-600">Cargando cursos... ⏳</div>;
@@ -40,7 +41,7 @@ export const HomePage = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           
           {/* Mapeamos el array de cursos para crear una tarjeta por cada uno */}
-          {cursos.map((curso) => (
+          {Array.isArray(cursos) && cursos.length > 0 && cursos.map((curso) => (
             <div key={curso.id} className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300">
               
               {/* Imagen del curso */}
@@ -74,7 +75,7 @@ export const HomePage = () => {
           ))}
 
           {/* Mensaje por si la base de datos está vacía */}
-          {cursos.length === 0 && (
+          {Array.isArray(cursos) && cursos.length === 0 && (
             <div className="col-span-full text-center text-gray-500 text-lg">
               No hay cursos disponibles en este momento.
             </div>
