@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
 @Service
@@ -26,5 +27,21 @@ public class CloudinaryService {
         // Subimos el archivo a la carpeta especificada
         return (Map<String, Object>) cloudinary.uploader().upload(multipartFile.getBytes(), 
                 ObjectUtils.asMap("folder", folder));
+    }
+    // Importante: Asegurate de tener importado java.util.Map y java.util.HashMap
+    
+    public String subirArchivo(MultipartFile file) {
+        try {
+            Map<String, Object> options = new HashMap<>();
+            // 👇 ESTO ES LA MAGIA: Le dice a Cloudinary que acepte PDFs, ZIPs, etc.
+            options.put("resource_type", "auto"); 
+            options.put("folder", "entregas_lms"); // Opcional: te crea una carpeta en tu cuenta
+
+            Map<?, ?> uploadedFile = cloudinary.uploader().upload(file.getBytes(), options);
+            return uploadedFile.get("secure_url").toString();
+            
+        } catch (Exception e) {
+            throw new RuntimeException("Error al subir el archivo a Cloudinary: " + e.getMessage());
+        }
     }
 }

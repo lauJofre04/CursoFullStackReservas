@@ -34,4 +34,13 @@ public class EmailService {
             throw new RuntimeException("No se pudo enviar el correo electrónico.");
         }
     }
+    public void enviarEmailRecordatorio(String destinatario, String curso, String tarea) {
+        SimpleMailMessage mensaje = new SimpleMailMessage();
+        mensaje.setTo(destinatario);
+        mensaje.setSubject("⏰ Recordatorio de Entrega: " + curso);
+        mensaje.setText("Hola!\n\nTe recordamos que hoy es el último día para entregar la tarea: '" 
+                + tarea + "' del curso '" + curso + "'.\n\n¡No te olvides de subirla a la plataforma!\n\nSaludos,\nEl equipo de DevCursos.");
+
+        mailSender.send(mensaje);
+    }
 }

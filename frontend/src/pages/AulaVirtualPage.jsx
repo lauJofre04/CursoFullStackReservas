@@ -4,6 +4,8 @@ import clienteAxios from '../api/axiosConfig';
 import { useAuth } from '../context/AuthContext';
 import { GestorModulos } from '../components/GestorModulos';
 import { CrearEvaluacion } from '../components/CrearEvaluacion';
+import { ModalCrearTarea } from '../components/ModalCrearTarea';
+import {ModalEntrega} from '../components/ModalEntrega';
 
 export const AulaVirtualPage = () => {
   const { cursoId } = useParams();
@@ -17,7 +19,9 @@ export const AulaVirtualPage = () => {
   const [sidebarAbierta, setSidebarAbierta] = useState(true);
   const [modoEdicion, setModoEdicion] = useState(false);
   const [vistaAdmin, setVistaAdmin] = useState(false);
+  const [modalTareaAbierto, setModalTareaAbierto] = useState(false);
   const [evaluaciones, setEvaluaciones] = useState([]);
+  const [tareaSeleccionada, setTareaSeleccionada] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -63,6 +67,7 @@ export const AulaVirtualPage = () => {
 
   const handleSeleccionarLeccion = async (leccionId) => {
     try {
+      setTareaSeleccionada(null); // Deseleccionamos cualquier tarea previamente seleccionada
       setLeccionSeleccionada(leccionId);
 
       // Cargar la lección con sus recursos
@@ -78,6 +83,11 @@ export const AulaVirtualPage = () => {
     } catch (err) {
       console.error('Error cargando lección:', err);
     }
+  };
+
+  const handleSeleccionarTarea = (tarea) => {
+    setLeccionSeleccionada(null); // Ocultamos la lección
+    setTareaSeleccionada(tarea);  // Mostramos la tarea
   };
 
   if (cargando) {
@@ -107,17 +117,23 @@ export const AulaVirtualPage = () => {
       <div className="min-h-screen bg-gray-100 p-8">
         <div className="max-w-7xl mx-auto">
           {/* Cabecera Admin */}
+          {/* Cabecera Admin */}
           <div className="flex justify-between items-center bg-white rounded-2xl shadow-sm p-6 mb-6">
             <h1 className="text-3xl font-bold text-gray-800">⚙️ Gestionar Contenido</h1>
-            <button
-              onClick={() => {
-                setModoEdicion(false);
-                setVistaAdmin('modulos'); // Reseteamos la vista al salir
-              }}
-              className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
-            >
-              👁️ Ver como Estudiante
-            </button>
+            
+            {/* 👈 NUEVO: Agrupamos los botones */}
+            <div className="flex gap-3">
+              
+              <button
+                onClick={() => {
+                  setModoEdicion(false);
+                  setVistaAdmin('modulos'); // Reseteamos la vista al salir
+                }}
+                className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-sm"
+              >
+                👁️ Ver como Estudiante
+              </button>
+            </div>
           </div>
 
           {/* 🗂️ PESTAÑAS (TABS) */}
@@ -150,6 +166,8 @@ export const AulaVirtualPage = () => {
           ) : (
             <CrearEvaluacion cursoIdPreseleccionado={parseInt(cursoId)} /> 
           )}
+         
+
         </div>
       </div>
     );
@@ -196,6 +214,28 @@ export const AulaVirtualPage = () => {
                   </button>
                 ))}
               </div>
+              {/* 👈 NUEVO: Entregas del Módulo */}
+              {modulo.tareas && modulo.tareas.length > 0 && (
+                <div className="mt-2 space-y-1 border-t border-gray-700 pt-2 pb-2">
+                  <div className="px-4 py-1 text-xs font-bold text-purple-400 uppercase tracking-wider">
+                    Entregas Prácticas
+                  </div>
+                  {modulo.tareas.map((tarea) => (
+                    <button
+                      key={tarea.id}
+                      onClick={() => handleSeleccionarTarea(tarea)}
+                      className={`w-full text-left px-6 py-2 text-sm transition-all ${
+                        tareaSeleccionada?.id === tarea.id
+                          ? 'bg-purple-600 text-white font-semibold border-l-4 border-purple-400'
+                          : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                      }`}
+                    >
+                      <span className="mr-2">📝</span>
+                      <span className="truncate">{tarea.titulo}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
           
@@ -264,9 +304,11 @@ export const AulaVirtualPage = () => {
         <div className="p-8">
           {leccionSeleccionada ? (
             <ContenidoLeccion leccionId={leccionSeleccionada} recursoActual={recursoActual} setRecursoActual={setRecursoActual} />
+          ) : tareaSeleccionada ? (
+            <ContenidoTarea tarea={tareaSeleccionada} cursoTitulo={curso?.titulo} />
           ) : (
             <div className="text-center py-12">
-              <p className="text-gray-600 text-lg font-medium">👈 Selecciona una lección del menú para empezar</p>
+              <p className="text-gray-600 text-lg font-medium">👈 Selecciona una lección o entrega del menú para empezar</p>
             </div>
           )}
         </div>
@@ -454,6 +496,144 @@ const VisualizadorRecurso = ({ recurso }) => {
         {esPdf ? 'Abrir PDF' : esLink ? 'Visitar Enlace' : 'Abrir Documento'}
         <span className="text-lg leading-none">↗</span>
       </a>
+    </div>
+  );
+};
+// --- NUEVO COMPONENTE DE TAREA (Con validación de estado) ---
+const ContenidoTarea = ({ tarea, cursoTitulo }) => {
+  const { usuario } = useAuth();
+  const [modalAbierto, setModalAbierto] = useState(false);
+  const [miEntrega, setMiEntrega] = useState(null);
+  const [cargandoEntrega, setCargandoEntrega] = useState(true);
+
+  // Formateamos la fecha límite
+  const fechaLimiteDate = new Date(tarea.fechaLimite);
+  const fechaLimiteStr = fechaLimiteDate.toLocaleString('es-AR', {
+    dateStyle: 'full',
+    timeStyle: 'short'
+  });
+
+  // Comprobamos si el plazo ya venció
+  const plazoVencido = new Date() > fechaLimiteDate;
+
+  // Consultar si ya hay una entrega al cargar el componente
+  useEffect(() => {
+    cargarMiEntrega();
+  }, [tarea.id]);
+
+  const cargarMiEntrega = async () => {
+    try {
+      setCargandoEntrega(true);
+      const alumnoId = usuario?.id || 1;
+      const response = await clienteAxios.get(`/tareas/${tarea.id}/mi-entrega?alumnoId=${alumnoId}`);
+      setMiEntrega(response.data);
+    } catch (error) {
+      setMiEntrega(null);
+    } finally {
+      setCargandoEntrega(false);
+    }
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto pb-12">
+      <div className="bg-white rounded-2xl shadow-sm border border-purple-100 overflow-hidden">
+        
+        {/* Encabezado morado */}
+        <div className="bg-purple-600 px-8 py-6 text-white">
+          <div className="flex items-center gap-2 text-purple-200 text-sm font-bold uppercase tracking-wider mb-2">
+            <span>📝 Entrega Práctica</span>
+          </div>
+          <h1 className="text-3xl font-extrabold mb-2">{tarea.titulo}</h1>
+          <p className="text-purple-100 flex items-center gap-2 font-medium">
+            <span>⏰ Vence el:</span> {fechaLimiteStr}
+          </p>
+        </div>
+
+        {/* Cuerpo de la tarea */}
+        <div className="p-8">
+          <div className="prose max-w-none text-gray-700 mb-8 whitespace-pre-wrap">
+            <h3 className="text-lg font-bold text-gray-900 mb-3 border-b pb-2">Consignas</h3>
+            {tarea.descripcion}
+          </div>
+
+          {tarea.archivoConsignaUrl && (
+            <div className="mb-8 p-4 bg-gray-50 border border-gray-200 rounded-xl flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="text-3xl">📎</div>
+                <div>
+                  <p className="font-bold text-gray-800">Material adjunto del profesor</p>
+                  <p className="text-xs text-gray-500">Descargá este archivo para resolver la entrega</p>
+                </div>
+              </div>
+              <a 
+                href={tarea.archivoConsignaUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold rounded-lg transition-colors text-sm"
+              >
+                Descargar ↓
+              </a>
+            </div>
+          )}
+
+          <div className="border-t border-gray-100 pt-8">
+            <h3 className="text-xl font-bold text-gray-800 mb-4 text-center">Estado de tu entrega</h3>
+            {cargandoEntrega ? (
+              <p className="text-center text-gray-500">Verificando estado...</p>
+            ) : (
+              <div className="flex flex-col items-center">
+                {miEntrega && (
+                  <div className="w-full bg-green-50 border border-green-200 rounded-xl p-6 mb-6 text-center">
+                    <p className="text-green-700 font-bold text-lg mb-1">✅ ¡Trabajo entregado!</p>
+                    <p className="text-green-600 text-sm mb-4">
+                      Entregado el: {new Date(miEntrega.fechaEntrega).toLocaleString('es-AR', {
+                        dateStyle: 'full',
+                        timeStyle: 'short'
+                      })}
+                    </p>
+                    <a 
+                      href={miEntrega.archivoAlumnoUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:text-blue-800 font-semibold underline text-sm"
+                    >
+                      📄 Ver archivo entregado actual
+                    </a>
+                  </div>
+                )}
+
+                {plazoVencido ? (
+                  <div className="px-6 py-3 bg-red-100 text-red-700 font-bold rounded-xl flex items-center gap-2">
+                    <span>⏳</span> El plazo para esta entrega ha finalizado
+                  </div>
+                ) : (
+                  <button 
+                    onClick={() => setModalAbierto(true)}
+                    className={`${miEntrega ? 'bg-gray-800 hover:bg-gray-900' : 'bg-purple-600 hover:bg-purple-700'} text-white font-bold py-3 px-8 rounded-xl shadow-md transition-all hover:scale-105 active:scale-95 text-lg`}
+                  >
+                    {miEntrega ? '🔄 Modificar mi entrega' : '📤 Subir mi entrega'}
+                  </button>
+                )}
+
+                {miEntrega && !plazoVencido && (
+                  <p className="text-xs text-gray-400 mt-3 text-center max-w-md">
+                    Podés modificar tu entrega subiendo un nuevo archivo. Esto reemplazará tu trabajo anterior.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <ModalEntrega 
+        isOpen={modalAbierto} 
+        onClose={() => {
+          setModalAbierto(false);
+          cargarMiEntrega();
+        }} 
+        tarea={{ ...tarea, cursoTitulo }}
+      />
     </div>
   );
 };

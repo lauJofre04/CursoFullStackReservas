@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -22,4 +24,8 @@ public interface InscripcionRepository extends JpaRepository<Inscripcion, Long> 
     Optional<Inscripcion> findByUsuarioAndCurso(Usuario usuario, Curso curso);
 
     List<Inscripcion> findByEstadoAndFechaInscripcionBefore(String estado, LocalDateTime fechaLimite);
+    List<Inscripcion> findByUsuarioId(Long usuarioId);
+
+    @Query("SELECT i.usuario FROM Inscripcion i WHERE i.curso.id = :cursoId")
+    List<Usuario> findUsuariosByCursoId(@Param("cursoId") Long cursoId);
 }

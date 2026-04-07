@@ -8,20 +8,18 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import ar.dev.jofrelautaro.reservation_backend.model.entity.TareaProgramada;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ModuloDTO {
-
+public class ChatConversationDTO {
     private Long id;
-    private String titulo;
-    private String descripcion;
-    private Integer orden;
-    private LocalDateTime fechaCreacion;
-    private List<LeccionDTO> lecciones;
-    private List<TareaProgramada> tareas;
+    private String nombre;
+    private List<Long> participanteIds;
+    private List<String> participanteNombres;
+    private String ultimoMensaje;
+    private LocalDateTime fechaActualizacion;
+    private int mensajesNoLeidos;
 }

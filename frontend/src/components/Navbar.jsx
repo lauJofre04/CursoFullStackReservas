@@ -66,6 +66,12 @@ export const Navbar = () => {
               <Link to="/perfil" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600" onClick={() => setMenuAbierto(false)}>
                 Mi Perfil
               </Link>
+              <Link to="/mi-calendario" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600" onClick={() => setMenuAbierto(false)}>
+                Mi Calendario
+              </Link>
+              <Link to="/chat" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600" onClick={() => setMenuAbierto(false)}>
+                Chat
+              </Link>
 
               {usuario.rol?.toUpperCase().includes('ADMIN') && (
                 <Link to="/admin-panel" className="block px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50 mt-1" onClick={() => setMenuAbierto(false)}>

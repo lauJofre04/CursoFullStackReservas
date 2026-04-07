@@ -1,0 +1,31 @@
+{
+    // Use IntelliSense para saber los atributos posibles.
+    // Mantenga el puntero para ver las descripciones de los existentes atributos.
+    // Para más información, visite: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Current File",
+            "request": "launch",
+            "mainClass": "${file}"
+        },
+        {
+            "type": "java",
+            "name": "ReservationBackendApplication",
+            "request": "launch",
+            "mainClass": "ar.dev.jofrelautaro.reservation_backend.ReservationBackendApplication",
+            "projectName": "reservation-backend",
+            "env": {
+                "DB_PASSWORD": "admin123",
+                "MAIL_USER": "devjofrelautaro@gmail.com",
+                "MAIL_PASSWORD": "suqk hiry eyoy vwrs",
+                "MP_ACCESS_TOKEN": "APP_USR-930243329859387-033113-5eda1888650a4a3a494db03b37c7e91f-3264812537",
+                "MP_PUBLIC_KEY": "APP_USR-55877164-bc1c-4927-839f-83321002cfa4",
+                "CLOUDINARY_CLOUD_NAME": "dbwq8gwxs",
+                "CLOUDINARY_API_KEY": "396523953186898",
+                "CLOUDINARY_API_SECRET": "vuUlEfpFtEmSBUwnWHaRxTSJlLA"
+            }
+        }
+    ]
+}

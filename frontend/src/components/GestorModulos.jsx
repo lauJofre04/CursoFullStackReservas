@@ -1,23 +1,28 @@
 import { useState, useEffect } from 'react';
 import clienteAxios from '../api/axiosConfig';
+import { ModalCrearTarea } from './ModalCrearTarea'; // 👈 1. IMPORTANTE: Ajustá la ruta si es necesario
 
 export const GestorModulos = ({ cursoId, cursoTitulo }) => {
   // Estados
   const [modulos, setModulos] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
+  const [entregasSeleccionadas, setEntregasSeleccionadas] = useState(null); // Para mostrar las entregas de un módulo específico
   
   // Estados para crear/editar módulo
   const [mostrandoFormularioModulo, setMostrandoFormularioModulo] = useState(false);
-  const [moduloEditar, setModuloEditar] = useState(null);
   const [nuevoModulo, setNuevoModulo] = useState({
     titulo: '',
     descripcion: '',
     orden: 1
   });
 
-  // Estados para gestionar lecciones
+  // Estados para gestionar lecciones y TAREAS
   const [moduloSeleccionado, setModuloSeleccionado] = useState(null);
+  
+  // 👈 2. NUEVOS ESTADOS PARA EL MODAL DE TAREAS
+  const [modalTareaAbierto, setModalTareaAbierto] = useState(false);
+  const [moduloIdParaTarea, setModuloIdParaTarea] = useState(null);
 
   // Cargar módulos
   useEffect(() => {
@@ -41,12 +46,10 @@ export const GestorModulos = ({ cursoId, cursoTitulo }) => {
 
   const handleCrearModulo = async (e) => {
     e.preventDefault();
-    
     if (!nuevoModulo.titulo.trim()) {
       setError('El título del módulo es obligatorio');
       return;
     }
-
     try {
       const response = await clienteAxios.post(`/modulos/curso/${cursoId}`, nuevoModulo);
       setModulos([...modulos, response.data.modulo]);
@@ -72,8 +75,14 @@ export const GestorModulos = ({ cursoId, cursoTitulo }) => {
     }
   };
 
+  // 👈 3. FUNCIÓN PARA ABRIR EL MODAL DE TAREA
+  const handleAbrirModalTarea = (moduloId) => {
+    setModuloIdParaTarea(moduloId);
+    setModalTareaAbierto(true);
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6">
+    <div className="bg-white rounded-lg shadow-lg p-6 relative">
       <h2 className="text-2xl font-bold text-gray-800 mb-2">
         📚 Gestor de Contenido: {cursoTitulo}
       </h2>
@@ -132,17 +141,10 @@ export const GestorModulos = ({ cursoId, cursoTitulo }) => {
           </div>
 
           <div className="flex gap-2">
-            <button
-              type="submit"
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold"
-            >
+            <button type="submit" className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold">
               ✅ Guardar Módulo
             </button>
-            <button
-              type="button"
-              onClick={() => setMostrandoFormularioModulo(false)}
-              className="px-4 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500"
-            >
+            <button type="button" onClick={() => setMostrandoFormularioModulo(false)} className="px-4 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500">
               ❌ Cancelar
             </button>
           </div>
@@ -162,23 +164,36 @@ export const GestorModulos = ({ cursoId, cursoTitulo }) => {
                     <p className="text-gray-600 text-sm mt-1">{modulo.descripcion}</p>
                   )}
                 </div>
-                <button
-                  onClick={() => handleEliminarModulo(modulo.id)}
-                  className="text-red-600 hover:text-red-800 font-bold"
-                >
+                <button onClick={() => handleEliminarModulo(modulo.id)} className="text-red-600 hover:text-red-800 font-bold">
                   🗑️
                 </button>
               </div>
 
-              <button
-                onClick={() => setModuloSeleccionado(modulo.id === moduloSeleccionado ? null : modulo.id)}
-                className="text-blue-600 hover:text-blue-800 font-semibold text-sm mb-2"
-              >
-                {moduloSeleccionado === modulo.id ? '▼' : '▶'} Gestionar Lecciones
-              </button>
+              {/* 👈 4. AGRUPAMOS LOS BOTONES DE ACCIÓN DE CADA MÓDULO */}
+              <div className="flex gap-4 mb-2">
+                <button
+                  onClick={() => setModuloSeleccionado(modulo.id === moduloSeleccionado ? null : modulo.id)}
+                  className="text-blue-600 hover:text-blue-800 font-semibold text-sm"
+                >
+                  {moduloSeleccionado === modulo.id ? '▼' : '▶'} Gestionar Lecciones
+                </button>
+
+                <button
+                  onClick={() => {
+                    setEntregasSeleccionadas(modulo.id === entregasSeleccionadas ? null : modulo.id);
+                    setModuloSeleccionado(null); // Cerramos el otro si abrimos este
+                  }}
+                  className="text-purple-600 hover:text-purple-800 font-semibold text-sm"
+                >
+                  {entregasSeleccionadas === modulo.id ? '▼' : '▶'} Gestionar Entregas
+                </button>
+              </div>
 
               {moduloSeleccionado === modulo.id && (
                 <GestorLecciones moduloId={modulo.id} moduloTitulo={modulo.titulo} />
+              )}
+              {entregasSeleccionadas === modulo.id && (
+                <GestorEntregas moduloId={modulo.id} />
               )}
             </div>
           ))}
@@ -188,7 +203,123 @@ export const GestorModulos = ({ cursoId, cursoTitulo }) => {
           No hay módulos. ¡Crea uno para empezar!
         </p>
       )}
+
+      {/* 👈 5. EL MODAL SE RENDERIZA ACÁ ABAJO */}
+      <ModalCrearTarea 
+        isOpen={modalTareaAbierto}
+        onClose={() => {
+          setModalTareaAbierto(false);
+          setModuloIdParaTarea(null);
+        }}
+        moduloId={moduloIdParaTarea}
+        onTareaCreada={() => {
+          console.log('Tarea creada con éxito para el módulo:', moduloIdParaTarea);
+          // Opcional: Podrías hacer un toast o recargar algo si mostrás las tareas acá mismo en el futuro
+        }}
+      />
+
     </div>
+  );
+};
+
+const BuzonCorrecciones = ({ tarea, buzon, cargando, onCampoCambio, onGuardarCorreccion, onCerrar }) => {
+  return (
+    <div className="mt-6 p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+        <div>
+          <h4 className="text-xl font-bold text-purple-800">📬 Buzón de Correcciones</h4>
+          <p className="text-sm text-gray-500">Alumnos inscriptos al curso de la tarea <span className="font-semibold">{tarea.titulo}</span>.</p>
+        </div>
+        <button
+          onClick={onCerrar}
+          className="px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded text-sm font-semibold"
+        >
+          Cerrar buzón
+        </button>
+      </div>
+
+      {cargando ? (
+        <p className="text-gray-500">Cargando buzón...</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm text-left">
+            <thead className="bg-gray-100 text-gray-700">
+              <tr>
+                <th className="px-3 py-2">Alumno</th>
+                <th className="px-3 py-2">Estado</th>
+                <th className="px-3 py-2">Archivo / Entrega</th>
+                <th className="px-3 py-2">Nota</th>
+                <th className="px-3 py-2">Feedback</th>
+                <th className="px-3 py-2">Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              {buzon.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="px-3 py-4 text-gray-500 text-center">No hay alumnos inscritos en este curso.</td>
+                </tr>
+              ) : buzon.map((alumno) => (
+                <tr key={alumno.alumnoId} className="border-t border-gray-200">
+                  <td className="px-3 py-3">
+                    <p className="font-semibold text-gray-800">{alumno.nombreAlumno}</p>
+                    <p className="text-gray-500 text-xs">{alumno.emailAlumno}</p>
+                  </td>
+                  <td className="px-3 py-3">
+                    {alumno.entregado ? (
+                      <span className="text-green-700 bg-green-100 px-2 py-1 rounded-full text-xs font-semibold">Entregado</span>
+                    ) : (
+                      <span className="text-yellow-700 bg-yellow-100 px-2 py-1 rounded-full text-xs font-semibold">Pendiente</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-3">
+                    {alumno.entregado ? (
+                      <a
+                        href={alumno.archivoAlumnoUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-800 underline text-xs"
+                      >
+                        Ver archivo
+                      </a>
+                    ) : (
+                      <span className="text-gray-500 text-xs">Sin entrega</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-3 w-28">
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      value={alumno.notaInput}
+                      disabled={!alumno.entregado}
+                      onChange={(e) => onCampoCambio(alumno.alumnoId, 'notaInput', e.target.value)}
+                      className="w-full px-2 py-1 border rounded text-xs" 
+                    />
+                  </td>
+                  <td className="px-3 py-3 w-60">
+                    <textarea
+                      value={alumno.feedbackInput}
+                      disabled={!alumno.entregado}
+                      onChange={(e) => onCampoCambio(alumno.alumnoId, 'feedbackInput', e.target.value)}
+                      rows="2"
+                      className="w-full px-2 py-1 border rounded text-xs"
+                    />
+                  </td>
+                  <td className="px-3 py-3">
+                    <button
+                      onClick={() => onGuardarCorreccion(alumno)}
+                      disabled={!alumno.entregado}
+                      className="px-3 py-1 rounded text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400"
+                    >
+                      Guardar
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}    </div>
   );
 };
 
@@ -497,6 +628,162 @@ const GestorRecursos = ({ leccionId, leccionTitulo }) => {
           </div>
         ))}
       </div>
+    </div>
+  );
+};
+// --- NUEVO COMPONENTE: GESTOR DE ENTREGAS ---
+const GestorEntregas = ({ moduloId, moduloTitulo }) => {
+  const [tareas, setTareas] = useState([]);
+  const [modalAbierto, setModalAbierto] = useState(false);
+  const [tareaBuzon, setTareaBuzon] = useState(null);
+  const [buzon, setBuzon] = useState([]);
+  const [cargandoBuzon, setCargandoBuzon] = useState(false);
+
+  useEffect(() => {
+    cargarTareas();
+  }, [moduloId]);
+
+  const cargarTareas = async () => {
+    try {
+      const response = await clienteAxios.get(`/tareas/modulo/${moduloId}`);
+      setTareas(Array.isArray(response.data) ? response.data : []);
+    } catch (err) {
+      console.error('Error cargando tareas:', err);
+    }
+  };
+
+  const handleEliminarTarea = async (tareaId) => {
+    if (window.confirm('¿Estás seguro de eliminar esta entrega?')) {
+      try {
+        await clienteAxios.delete(`/tareas/${tareaId}`);
+        setTareas(tareas.filter(t => t.id !== tareaId));
+      } catch (err) {
+        console.error('Error eliminando tarea:', err);
+        alert('Error al eliminar la entrega');
+      }
+    }
+  };
+
+  const cargarBuzon = async (tareaId) => {
+    try {
+      setCargandoBuzon(true);
+      const response = await clienteAxios.get(`/tareas/${tareaId}/buzon`);
+      setBuzon(response.data.map(item => ({
+        ...item,
+        notaInput: item.nota ?? '',
+        feedbackInput: item.feedbackDocente ?? ''
+      })));
+    } catch (err) {
+      console.error('Error cargando buzón de correcciones:', err);
+      setBuzon([]);
+    } finally {
+      setCargandoBuzon(false);
+    }
+  };
+
+  const abrirBuzon = async (tarea) => {
+    setTareaBuzon(tarea);
+    await cargarBuzon(tarea.id);
+  };
+
+  const cerrarBuzon = () => {
+    setTareaBuzon(null);
+    setBuzon([]);
+  };
+
+  const actualizarCampoBuzon = (alumnoId, campo, valor) => {
+    setBuzon((prev) => prev.map((item) => (
+      item.alumnoId === alumnoId ? { ...item, [campo]: valor } : item
+    )));
+  };
+
+  const guardarCorreccion = async (alumno) => {
+    if (!alumno.entregaId) {
+      return;
+    }
+
+    try {
+      await clienteAxios.put(`/tareas/entregas/${alumno.entregaId}/corregir`, {
+        nota: alumno.notaInput === '' ? null : Number(alumno.notaInput),
+        feedbackDocente: alumno.feedbackInput
+      });
+
+      setBuzon((prev) => prev.map((item) => (
+        item.alumnoId === alumno.alumnoId ? {
+          ...item,
+          nota: alumno.notaInput === '' ? null : Number(alumno.notaInput),
+          feedbackDocente: alumno.feedbackInput
+        } : item
+      )));
+      alert('Corrección guardada correctamente');
+    } catch (err) {
+      console.error('Error guardando corrección:', err);
+      alert('Error al guardar la corrección');
+    }
+  };
+
+  return (
+    <div className="mt-3 pl-4 py-3 bg-purple-50 rounded-lg border border-purple-200">
+      <h4 className="font-semibold text-purple-800 mb-2">📝 Entregas en: {moduloTitulo}</h4>
+
+      <button
+        onClick={() => setModalAbierto(true)}
+        className="mb-3 px-3 py-1 bg-purple-600 text-white rounded text-sm hover:bg-purple-700 font-semibold"
+      >
+        ➕ Nueva Entrega
+      </button>
+
+      <div className="space-y-2">
+        {tareas.length === 0 ? (
+          <p className="text-sm text-gray-500 italic">No hay entregas configuradas en este módulo.</p>
+        ) : (
+          tareas.map((tarea) => (
+            <div key={tarea.id} className="p-2 bg-white rounded border border-purple-100 text-sm flex justify-between items-center shadow-sm">
+              <div>
+                <p className="font-bold text-gray-800">{tarea.titulo}</p>
+                <p className="text-gray-500 text-xs">Vence: {new Date(tarea.fechaLimite).toLocaleString()}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => abrirBuzon(tarea)}
+                  className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 font-semibold"
+                  title="Ver buzón de correcciones"
+                >
+                  📬 Buzón
+                </button>
+                <button
+                  onClick={() => handleEliminarTarea(tarea.id)}
+                  className="text-red-600 hover:text-red-800 font-bold p-1"
+                  title="Eliminar entrega"
+                >
+                  🗑️
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {tareaBuzon && (
+        <BuzonCorrecciones
+          tarea={tareaBuzon}
+          buzon={buzon}
+          cargando={cargandoBuzon}
+          onCampoCambio={actualizarCampoBuzon}
+          onGuardarCorreccion={guardarCorreccion}
+          onCerrar={cerrarBuzon}
+        />
+      )}
+
+      {/* Insertamos el Modal acá mismo para que sea auto-contenido */}
+      <ModalCrearTarea 
+        isOpen={modalAbierto}
+        onClose={() => setModalAbierto(false)}
+        moduloId={moduloId}
+        onTareaCreada={() => {
+          cargarTareas(); // Recargamos la lista automáticamente
+        }}
+      />
     </div>
   );
 };

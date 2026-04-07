@@ -103,6 +103,7 @@ public class ModuloService {
                 .descripcion(modulo.getDescripcion())
                 .orden(modulo.getOrden())
                 .fechaCreacion(modulo.getFechaCreacion())
+                .tareas(modulo.getTareas())
                 .lecciones(lecciones.stream()
                         .map(leccion -> new ar.dev.jofrelautaro.reservation_backend.model.dto.LeccionDTO(
                                 leccion.getId(),

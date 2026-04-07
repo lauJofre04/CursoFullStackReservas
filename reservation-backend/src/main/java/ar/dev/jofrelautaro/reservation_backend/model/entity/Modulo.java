@@ -6,9 +6,12 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -49,4 +52,8 @@ public class Modulo {
     // One-to-Many: Un módulo tiene muchas lecciones
     @OneToMany(mappedBy = "modulo", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Leccion> lecciones;
+
+    @OneToMany(mappedBy = "modulo", cascade = CascadeType.ALL,fetch = FetchType.LAZY ,orphanRemoval = true)
+    @Builder.Default
+    private List<TareaProgramada> tareas= new ArrayList<>();
 }

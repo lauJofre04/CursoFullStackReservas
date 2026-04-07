@@ -17,6 +17,9 @@ import { PagoErrorPage } from './pages/PagoErrorPage';
 import { PagoPendientePage } from './pages/PagoPendientePage';
 import { CrearEvaluacion } from './components/CrearEvaluacion';
 import { RendirEvaluacion } from './components/RendirEvaluacion';
+import { CalendarioPage } from './components/CalendarioPages';
+import { InboxPage } from './pages/InboxPage';
+import { ChatLauncher } from './components/ChatLauncher';
 
 function App() {
   return (
@@ -55,6 +58,14 @@ function App() {
             </ProtectedRoute>
           } 
         />
+        <Route 
+          path="/chat"
+          element={
+            <ProtectedRoute>
+              <InboxPage />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/recuperar-password" element={<CambiarPasswordPage />} />
         <Route path="/solicitar-recuperacion" element={<SolicitarRecuperacionPage />} />
         <Route path="/verificar-cuenta" element={<VerificarCuentaPage />} />
@@ -66,7 +77,9 @@ function App() {
         <Route path="/pago/exito" element={<PagoExitoPage />} />
         <Route path="/pago/error" element={<PagoErrorPage />} />
         <Route path="/pago/pendiente" element={<PagoPendientePage />} />
+        <Route path="/mi-calendario" element={<CalendarioPage />} />
       </Routes>
+      <ChatLauncher />
     </BrowserRouter>
   );
 }
