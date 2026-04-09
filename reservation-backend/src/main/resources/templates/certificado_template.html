@@ -1,0 +1,97 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Certificado Oficial</title>
+    <style type="text/css">
+        /* Reglas específicas para impresión en PDF */
+        @page {
+            size: A4 landscape; /* Hoja A4 apaisada (horizontal) */
+            margin: 0; /* Sin márgenes predeterminados */
+        }
+
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            display: flex; /* Centrado absoluto */
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Contenedor principal que simula el diploma */
+        .diploma-container {
+            width: 90%; /* Ajustá según tus gustos */
+            height: 85%;
+            margin: auto;
+            position: relative;
+            background-color: #fff;
+            /* Podés usar un borde orlado de Cloudinary de fondo */
+            /* background-image: url('URL_DE_TU_BORDE_EN_CLOUDINARY'); */
+            /* background-size: cover; */
+            border: 20px double #1a2a5c; /* Un borde doble clásico */
+            box-sizing: border-box; /* Importante para que el borde no sume tamaño */
+            text-align: center;
+            padding: 50px;
+        }
+
+        /* Títulos principales */
+        .header {
+            font-size: 40px;
+            font-weight: bold;
+            color: #1a2a5c;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+
+        .header-sub {
+            font-size: 20px;
+            color: #555;
+            margin-bottom: 50px;
+        }
+
+        /* Cuerpo del texto */
+        .body-text {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        /* Estilo para los nombres dinámicos */
+        .dynamic-name {
+            font-size: 36px;
+            font-weight: bold;
+            color: #1e40af; /* Un azul más moderno */
+            margin-bottom: 30px;
+            text-decoration: underline;
+        }
+
+        .fecha {
+            font-size: 18px;
+            color: #777;
+            position: absolute; /* Posicionamiento absoluto al pie */
+            bottom: 50px;
+            right: 50px;
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+    <div class="diploma-container">
+        <div class="header">Certificado de Finalización</div>
+        <div class="header-sub">Se otorga con orgullo a:</div>
+
+        <div class="body-text">El alumno/a</div>
+        <div class="dynamic-name" th:text="${alumnoNombre}">LAUTARO JOFRÉ</div>
+
+        <div class="body-text">ha completado satisfactoriamente el curso de:</div>
+        <div class="dynamic-name" th:text="${cursoTitulo}">SPRING BOOT MASTERCLASS</div>
+
+        <div class="body-text">Con una duración de 60 horas. Emitido el día:</div>
+
+        <div class="fecha" th:text="'Emitido el: ' + ${fechaEmision}">10/04/2026</div>
+    </div>
+</body>
+</html>

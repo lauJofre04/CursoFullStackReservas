@@ -18,15 +18,26 @@ export const AulaVirtualPage = () => {
   const [error, setError] = useState(null);
   const [sidebarAbierta, setSidebarAbierta] = useState(true);
   const [modoEdicion, setModoEdicion] = useState(false);
-  const [vistaAdmin, setVistaAdmin] = useState(false);
+  const [vistaAdmin, setVistaAdmin] = useState('modulos');
   const [modalTareaAbierto, setModalTareaAbierto] = useState(false);
   const [evaluaciones, setEvaluaciones] = useState([]);
   const [tareaSeleccionada, setTareaSeleccionada] = useState(null);
+  const [candidatosCertificados, setCandidatosCertificados] = useState([]);
+  const [seleccionadosCertificados, setSeleccionadosCertificados] = useState([]);
+  const [cargandoCertificados, setCargandoCertificados] = useState(false);
+  const [mensajeCertificados, setMensajeCertificados] = useState('');
+  const [enviandoCertificados, setEnviandoCertificados] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     cargarDatos();
   }, [cursoId]);
+
+  useEffect(() => {
+    if (vistaAdmin === 'certificados') {
+      cargarCandidatosCertificados();
+    }
+  }, [vistaAdmin]);
 
   const cargarDatos = async () => {
     try {
@@ -88,6 +99,51 @@ export const AulaVirtualPage = () => {
   const handleSeleccionarTarea = (tarea) => {
     setLeccionSeleccionada(null); // Ocultamos la lección
     setTareaSeleccionada(tarea);  // Mostramos la tarea
+  };
+
+  const cargarCandidatosCertificados = async () => {
+    try {
+      setCargandoCertificados(true);
+      setMensajeCertificados('');
+      const response = await clienteAxios.get(`/admin/cursos/${cursoId}/certificados/candidatos`);
+      setCandidatosCertificados(response.data || []);
+      setSeleccionadosCertificados([]);
+    } catch (error) {
+      console.error('Error cargando candidatos de certificados:', error);
+      setMensajeCertificados('No se pudieron cargar los candidatos para certificados.');
+    } finally {
+      setCargandoCertificados(false);
+    }
+  };
+
+  const toggleSeleccionado = (usuarioId) => {
+    setSeleccionadosCertificados((prev) =>
+      prev.includes(usuarioId)
+        ? prev.filter((id) => id !== usuarioId)
+        : [...prev, usuarioId]
+    );
+  };
+
+  const enviarCertificados = async () => {
+    if (seleccionadosCertificados.length === 0) {
+      setMensajeCertificados('Selecciona al menos un alumno antes de enviar certificados.');
+      return;
+    }
+
+    try {
+      setEnviandoCertificados(true);
+      setMensajeCertificados('');
+      await clienteAxios.post(`/admin/cursos/${cursoId}/certificados/enviar`, {
+        usuarioIds: seleccionadosCertificados,
+      });
+      setMensajeCertificados('Certificados enviados correctamente.');
+      cargarCandidatosCertificados();
+    } catch (error) {
+      console.error('Error enviando certificados:', error);
+      setMensajeCertificados('Error al enviar los certificados. Intenta nuevamente.');
+    } finally {
+      setEnviandoCertificados(false);
+    }
   };
 
   if (cargando) {
@@ -158,13 +214,91 @@ export const AulaVirtualPage = () => {
             >
               📝 Crear Evaluaciones
             </button>
+            <button
+              onClick={() => setVistaAdmin('certificados')}
+              className={`px-6 py-3 rounded-xl font-bold transition-all shadow-sm ${
+                vistaAdmin === 'certificados' 
+                  ? 'bg-indigo-600 text-white scale-105' 
+                  : 'bg-white text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              🏅 Certificados
+            </button>
           </div>
 
           {/* RENDERIZADO CONDICIONAL DE LA PESTAÑA */}
           {vistaAdmin === 'modulos' ? (
             <GestorModulos cursoId={parseInt(cursoId)} cursoTitulo={curso?.titulo || 'Curso'} />
+          ) : vistaAdmin === 'evaluaciones' ? (
+            <CrearEvaluacion cursoIdPreseleccionado={parseInt(cursoId)} />
           ) : (
-            <CrearEvaluacion cursoIdPreseleccionado={parseInt(cursoId)} /> 
+            <div className="bg-white rounded-2xl shadow-sm p-6">
+              <div className="flex flex-col gap-4">
+                <h2 className="text-2xl font-bold text-gray-800">Alumnos con opción de certificado</h2>
+                <p className="text-sm text-gray-600">Selecciona a los alumnos con evaluaciones aprobadas y envíales su certificado en PDF.</p>
+
+                {mensajeCertificados && (
+                  <div className="rounded-xl p-3 text-sm font-medium text-white bg-blue-600">
+                    {mensajeCertificados}
+                  </div>
+                )}
+
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-left text-sm text-gray-700">
+                    <thead className="bg-gray-100 text-gray-700 uppercase text-xs">
+                      <tr>
+                        <th className="px-4 py-3">Enviar</th>
+                        <th className="px-4 py-3">Alumno</th>
+                        <th className="px-4 py-3">Email</th>
+                        <th className="px-4 py-3">Aprobado</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {cargandoCertificados ? (
+                        <tr>
+                          <td colSpan="4" className="px-4 py-6 text-center text-gray-500">Cargando candidatos...</td>
+                        </tr>
+                      ) : candidatosCertificados.length === 0 ? (
+                        <tr>
+                          <td colSpan="4" className="px-4 py-6 text-center text-gray-500">No hay alumnos registrados para este curso.</td>
+                        </tr>
+                      ) : (
+                        candidatosCertificados.map((alumno) => (
+                          <tr key={alumno.usuarioId} className="border-b border-gray-200">
+                            <td className="px-4 py-4">
+                              <input
+                                type="checkbox"
+                                checked={seleccionadosCertificados.includes(alumno.usuarioId)}
+                                onChange={() => toggleSeleccionado(alumno.usuarioId)}
+                                disabled={!alumno.aprobado}
+                              />
+                            </td>
+                            <td className="px-4 py-4 font-medium text-gray-800">{alumno.nombre}</td>
+                            <td className="px-4 py-4 text-gray-500">{alumno.email}</td>
+                            <td className="px-4 py-4 text-sm font-semibold">
+                              <span className={alumno.aprobado ? 'text-green-600' : 'text-red-600'}>
+                                {alumno.aprobado ? 'Sí' : 'No'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <button
+                    onClick={enviarCertificados}
+                    disabled={enviandoCertificados || seleccionadosCertificados.length === 0}
+                    className="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-6 py-3 text-white font-semibold hover:bg-indigo-700 transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {enviandoCertificados ? 'Enviando certificados...' : 'Enviar certificados seleccionados'}
+                  </button>
+                  <span className="text-sm text-gray-500">Solo se pueden enviar certificados a alumnos que estén aprobados.</span>
+                </div>
+              </div>
+            </div>
           )}
          
 

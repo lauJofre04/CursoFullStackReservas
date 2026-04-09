@@ -5,6 +5,19 @@ import { useAuth } from '../context/AuthContext';
 import { FormularioCurso } from '../components/FormularioCurso';
 import { TablaCursos } from '../components/TablaCursos';
 import { FormularioMatriculacion } from '../components/FormularioMatriculacion';
+import {
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  Legend,
+  BarChart,
+  Bar,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+} from 'recharts';
 
 export const PanelPage = () => {
   const navigate = useNavigate();
@@ -26,6 +39,10 @@ export const PanelPage = () => {
     fechaNacimiento: ''
   });
   const [estadoDatos, setEstadoDatos] = useState({ cargando: false, mensaje: null, tipo: '' });
+
+  const [estadisticas, setEstadisticas] = useState(null);
+  const [cargandoEstadisticas, setCargandoEstadisticas] = useState(false);
+  const [errorEstadisticas, setErrorEstadisticas] = useState(null);
 
   // Cargar cursos al montar el componente
   useEffect(() => {
@@ -129,6 +146,35 @@ export const PanelPage = () => {
     }
   };
 
+  const cargarEstadisticas = async () => {
+    setCargandoEstadisticas(true);
+    setErrorEstadisticas(null);
+
+    try {
+      const response = await clienteAxios.get('/admin/estadisticas');
+      setEstadisticas(response.data);
+    } catch (error) {
+      setErrorEstadisticas('No se pudieron cargar las estadísticas. Revisa tu sesión o intenta de nuevo.');
+      setEstadisticas(null);
+    } finally {
+      setCargandoEstadisticas(false);
+    }
+  };
+
+  useEffect(() => {
+    if (seccionActiva === 'estadisticas') {
+      cargarEstadisticas();
+    }
+  }, [seccionActiva]);
+
+  const formatearMoneda = (valor) => {
+    return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(valor);
+  };
+
+  const formatearTitulo = (titulo) => {
+    return titulo.length > 20 ? `${titulo.slice(0, 20)}...` : titulo;
+  };
+
   return (
     <div className="min-h-screen bg-gray-100">
       {/* SIDEBAR */}
@@ -182,6 +228,17 @@ export const PanelPage = () => {
             >
               💳 Historial de Compras
             </button>
+
+            <button
+              onClick={() => setSeccionActiva('estadisticas')}
+              className={`w-full text-left px-4 py-3 rounded-lg font-semibold transition-colors ${
+                seccionActiva === 'estadisticas'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              📊 Métricas
+            </button>
           </nav>
 
           <button
@@ -194,7 +251,7 @@ export const PanelPage = () => {
 
         {/* CONTENIDO PRINCIPAL */}
         <main className="flex-1 overflow-auto p-8">
-          <div className="max-w-4xl mx-auto">
+          <div className={`max-w-4xl mx-auto ${seccionActiva === 'estadisticas' ? 'max-w-6xl' : ''}`}>
             
             {/* Matricular Usuarios */}
             {seccionActiva === 'matricular' && (
@@ -320,6 +377,93 @@ export const PanelPage = () => {
                       )}
                     </div>
                   </form>
+                </div>
+              </div>
+            )}
+
+            {/* Métricas Administrativas */}
+            {seccionActiva === 'estadisticas' && (
+              <div className="space-y-8">
+                <h1 className="text-3xl font-bold text-gray-800 mb-8">📊 Métricas Administrativas</h1>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-white shadow rounded-lg p-6 border border-gray-100">
+                    <h2 className="text-sm uppercase tracking-wide text-gray-500 mb-2">Usuarios registrados</h2>
+                    <p className="text-4xl font-bold text-blue-600">
+                      {estadisticas ? estadisticas.totalUsuarios : '--'}
+                    </p>
+                  </div>
+
+                  <div className="bg-white shadow rounded-lg p-6 border border-gray-100">
+                    <h2 className="text-sm uppercase tracking-wide text-gray-500 mb-2">Ingresos aprobados</h2>
+                    <p className="text-4xl font-bold text-green-600">
+                      {estadisticas ? formatearMoneda(estadisticas.ingresosTotales) : '--'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-white shadow rounded-lg p-6 border border-gray-100">
+                  <h2 className="text-xl font-semibold mb-4 text-gray-800">Cursos con más inscripciones</h2>
+
+                  {cargandoEstadisticas ? (
+                    <p className="text-gray-600">Cargando métricas...</p>
+                  ) : errorEstadisticas ? (
+                    <p className="text-red-600">{errorEstadisticas}</p>
+                  ) : estadisticas?.cursosMasInscritos?.length ? (
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                        <div className="h-[28rem] bg-white rounded-lg p-4 shadow-sm border border-gray-100">
+                          <h3 className="text-lg font-semibold mb-4">Participación por curso</h3>
+                          <ResponsiveContainer width="100%" height={340}>
+                            <PieChart>
+                              <Pie
+                                data={estadisticas.cursosMasInscritos}
+                                dataKey="inscripciones"
+                                nameKey="titulo"
+                                cx="50%"
+                                cy="45%"
+                                outerRadius={90}
+                                innerRadius={55}
+                                paddingAngle={4}
+                                labelLine={false}
+                                label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
+                                minAngle={15}
+                              >
+                                {estadisticas.cursosMasInscritos.map((entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={[ '#4f46e5', '#0f766e', '#d97706', '#be123c', '#0ea5e9', '#22c55e' ][index % 6]} />
+                                ))}
+                              </Pie>
+                              <Tooltip formatter={(value) => [`${value} inscripciones`, 'Inscripciones']} />
+                              <Legend layout="horizontal" verticalAlign="bottom" align="center" iconType="circle" />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        </div>
+
+                        <div className="h-[28rem] bg-white rounded-lg p-4 shadow-sm border border-gray-100">
+                          <h3 className="text-lg font-semibold mb-4">Top cursos inscritos</h3>
+                          <ResponsiveContainer width="100%" height={340}>
+                            <BarChart data={estadisticas.cursosMasInscritos} margin={{ top: 10, right: 16, left: 0, bottom: 20 }}>
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis
+                                dataKey="titulo"
+                                tick={{ fontSize: 12 }}
+                                interval={0}
+                                angle={-35}
+                                textAnchor="end"
+                                height={80}
+                                tickFormatter={formatearTitulo}
+                              />
+                              <YAxis />
+                              <Tooltip formatter={(value) => [`${value} inscripciones`, 'Inscripciones']} />
+                              <Bar dataKey="inscripciones" fill="#2563eb" radius={[8, 8, 0, 0]} />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-gray-600">Aún no hay datos disponibles para mostrar.</p>
+                  )}
                 </div>
               </div>
             )}

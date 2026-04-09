@@ -4,6 +4,7 @@ import ar.dev.jofrelautaro.reservation_backend.model.entity.Pago;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -20,4 +21,7 @@ public interface PagoRepository extends JpaRepository<Pago, Long> {
 
     // Buscar todos los pagos de un curso
     java.util.List<Pago> findByCursoId(Long cursoId);
+
+    // Buscar todos los pagos por estado
+    List<Pago> findByEstado(String estado);
 }

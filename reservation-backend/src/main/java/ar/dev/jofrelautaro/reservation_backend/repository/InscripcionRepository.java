@@ -25,7 +25,14 @@ public interface InscripcionRepository extends JpaRepository<Inscripcion, Long> 
 
     List<Inscripcion> findByEstadoAndFechaInscripcionBefore(String estado, LocalDateTime fechaLimite);
     List<Inscripcion> findByUsuarioId(Long usuarioId);
+    List<Inscripcion> findByCursoId(Long cursoId);
+
+    // Count inscriptions by course for capacity checking
+    Long countByCurso(Curso curso);
 
     @Query("SELECT i.usuario FROM Inscripcion i WHERE i.curso.id = :cursoId")
     List<Usuario> findUsuariosByCursoId(@Param("cursoId") Long cursoId);
+
+    @Query("SELECT i.curso.id, i.curso.titulo, COUNT(i) FROM Inscripcion i GROUP BY i.curso.id, i.curso.titulo ORDER BY COUNT(i) DESC")
+    List<Object[]> findTopCursos(org.springframework.data.domain.Pageable pageable);
 }

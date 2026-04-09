@@ -44,4 +44,19 @@ public class CloudinaryService {
             throw new RuntimeException("Error al subir el archivo a Cloudinary: " + e.getMessage());
         }
     }
+
+    public String subirArchivoBytes(byte[] bytes, String folder, String publicId) {
+        try {
+            Map<String, Object> options = new HashMap<>();
+            options.put("resource_type", "auto");
+            options.put("folder", folder);
+            if (publicId != null && !publicId.isBlank()) {
+                options.put("public_id", publicId);
+            }
+            Map<?, ?> uploadedFile = cloudinary.uploader().upload(bytes, options);
+            return uploadedFile.get("secure_url").toString();
+        } catch (Exception e) {
+            throw new RuntimeException("Error al subir bytes a Cloudinary: " + e.getMessage());
+        }
+    }
 }

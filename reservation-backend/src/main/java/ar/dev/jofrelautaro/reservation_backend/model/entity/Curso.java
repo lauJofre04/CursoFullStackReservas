@@ -34,6 +34,9 @@ public class Curso {
     @Column(nullable = false)
     private Double precio;
 
+    // Capacidad máxima de alumnos (opcional)
+    private Integer capacidadMaxima;
+
     // Acá guardaremos la URL de la imagen 
     private String imagen; 
 

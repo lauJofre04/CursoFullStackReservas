@@ -7,6 +7,7 @@ import ar.dev.jofrelautaro.reservation_backend.model.entity.Inscripcion;
 import ar.dev.jofrelautaro.reservation_backend.model.entity.Usuario;
 import ar.dev.jofrelautaro.reservation_backend.repository.CursoRepository;
 import ar.dev.jofrelautaro.reservation_backend.repository.InscripcionRepository;
+import ar.dev.jofrelautaro.reservation_backend.repository.ResultadoEvaluacionRepository;
 import ar.dev.jofrelautaro.reservation_backend.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 
@@ -23,6 +24,7 @@ public class InscripcionService {
     private final InscripcionRepository inscripcionRepository;
     private final UsuarioRepository usuarioRepository;
     private final CursoRepository cursoRepository;
+    private final ResultadoEvaluacionRepository resultadoEvaluacionRepository;
 
     public Inscripcion matricularManualmente(InscripcionAdminRequest request) {
         
@@ -116,5 +118,58 @@ public class InscripcionService {
         Inscripcion inscripcionGuardada = inscripcionRepository.save(nuevaInscripcion);
         System.out.println("✅ Usuario matriculado exitosamente - Inscripción ID: " + inscripcionGuardada.getId());
         return inscripcionGuardada;
+    }
+
+    /**
+     * Verifica si un curso tiene cupo disponible
+     */
+    public boolean tieneCupoDisponible(Curso curso) {
+        if (curso.getCapacidadMaxima() == null) {
+            return true; // Sin límite de capacidad
+        }
+        Long inscripcionesActuales = inscripcionRepository.countByCurso(curso);
+        return inscripcionesActuales < curso.getCapacidadMaxima();
+    }
+
+    /**
+     * Inscribe a un usuario en un curso verificando capacidad
+     */
+    public Inscripcion inscribirUsuario(Curso curso, Usuario usuario) {
+        if (!tieneCupoDisponible(curso)) {
+            throw new IllegalArgumentException("No hay cupos disponibles");
+        }
+
+        if (inscripcionRepository.existsByUsuarioAndCurso(usuario, curso)) {
+            throw new IllegalArgumentException("El usuario ya está inscrito en este curso");
+        }
+
+        Inscripcion nuevaInscripcion = Inscripcion.builder()
+                .usuario(usuario)
+                .curso(curso)
+                .metodoAcceso(ar.dev.jofrelautaro.reservation_backend.model.entity.MetodoAcceso.PAGO_ONLINE)
+                .estado("ACTIVA")
+                .build();
+
+        return inscripcionRepository.save(nuevaInscripcion);
+    }
+
+    /**
+     * Calcula el progreso de un alumno en un curso basado en evaluaciones aprobadas
+     */
+    public double calcularProgreso(Inscripcion inscripcion, List<ar.dev.jofrelautaro.reservation_backend.model.entity.Evaluacion> evaluaciones) {
+        if (evaluaciones.isEmpty()) {
+            return 0.0;
+        }
+
+        Long evaluacionesAprobadas = resultadoEvaluacionRepository.countByUsuarioAndEvaluacionCursoAndAprobadoTrue(
+                inscripcion.getUsuario(), inscripcion.getCurso());
+        Long totalEvaluaciones = resultadoEvaluacionRepository.countByUsuarioAndEvaluacionCurso(
+                inscripcion.getUsuario(), inscripcion.getCurso());
+
+        if (totalEvaluaciones == 0) {
+            return 0.0;
+        }
+
+        return (double) evaluacionesAprobadas / totalEvaluaciones * 100.0;
     }
 }
