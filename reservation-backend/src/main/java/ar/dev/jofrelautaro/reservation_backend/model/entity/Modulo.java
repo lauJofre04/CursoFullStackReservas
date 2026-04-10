@@ -10,6 +10,8 @@ import lombok.Setter;
 
 import org.hibernate.annotations.CreationTimestamp;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -51,9 +53,11 @@ public class Modulo {
 
     // One-to-Many: Un módulo tiene muchas lecciones
     @OneToMany(mappedBy = "modulo", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private List<Leccion> lecciones;
 
     @OneToMany(mappedBy = "modulo", cascade = CascadeType.ALL,fetch = FetchType.LAZY ,orphanRemoval = true)
     @Builder.Default
+    @JsonIgnore
     private List<TareaProgramada> tareas= new ArrayList<>();
 }

@@ -7,6 +7,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -29,6 +31,7 @@ public class Inscripcion {
     // Relación con el Curso
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "curso_id", nullable = false)
+    @JsonIgnore
     private Curso curso;
 
     // Acá usamos el Enum que acabamos de crear

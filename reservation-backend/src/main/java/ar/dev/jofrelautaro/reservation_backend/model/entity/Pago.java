@@ -7,6 +7,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -30,6 +32,7 @@ public class Pago {
     // Relación con el Curso (qué se está pagando)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "curso_id", nullable = false)
+    @JsonIgnore
     private Curso curso;
 
     // ID de la preferencia de Mercado Pago

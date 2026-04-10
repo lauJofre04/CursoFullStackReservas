@@ -56,6 +56,7 @@ public class Curso {
 
     // Adentro de Curso.java
     @OneToMany(mappedBy = "curso", cascade = CascadeType.ALL)
+    
     @JsonIgnore // Evitamos que se serialice la lista de evaluaciones para no crear un ciclo infinito
     private List<Evaluacion> evaluaciones;
 }
