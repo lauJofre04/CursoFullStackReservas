@@ -16,7 +16,7 @@ import java.io.IOException;
 
 
 @RestController
-@RequestMapping("/api/cursos")
+@RequestMapping("/cursos")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*") // Clave para que React no tenga problemas de CORS
 public class CursoController {
