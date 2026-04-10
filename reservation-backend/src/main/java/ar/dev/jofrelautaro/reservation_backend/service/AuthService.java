@@ -55,7 +55,7 @@ public class AuthService {
         tokenVerificacionRepository.save(tokenVerificacion);
 
         // 4. Disparamos el correo
-        String linkReact = "http://localhost:5173/verificar-cuenta?token=" + token;
+        String linkReact = "https://devcursos-lj.vercel.app/verificar-cuenta?token=" + token;
         String cuerpoMail = "¡Bienvenido a DevCursos, " + nuevoUsuario.getNombre() + "!\n\n" +
                 "Por favor, verificá tu correo haciendo clic en el siguiente enlace:\n\n" +
                 linkReact + "\n\n" +
@@ -127,7 +127,7 @@ public class AuthService {
         tokenRecuperacionRepository.save(miToken);
 
         // Armamos el link y enviamos
-        String linkReact = "http://localhost:5173/recuperar-password?token=" + tokenGenerado;
+        String linkReact = "https://devcursos-lj.vercel.app/recuperar-password?token=" + tokenGenerado;
 
         String cuerpoMail = "Hola,\n\n" +
                 "Recibimos una solicitud para cambiar tu contraseña en DevCursos.\n" +
@@ -208,7 +208,7 @@ public class AuthService {
         tokenVerificacionRepository.save(tokenParaGuardar);
 
         // 5. Disparamos el correo
-        String linkReact = "http://localhost:5173/verificar-cuenta?token=" + nuevoToken;
+        String linkReact = "https://devcursos-lj.vercel.app/verificar-cuenta?token=" + nuevoToken;
         String cuerpoMail = "¡Hola " + usuario.getNombre() + "!\n\n" +
                 "Solicitaste un nuevo enlace para verificar tu cuenta en DevCursos.\n" +
                 "Hacé clic en el siguiente enlace:\n\n" +

@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
-@CrossOrigin() // Clave para que React (localhost:5173) no tenga problemas de CORS
+@CrossOrigin() 
 public class AuthController {
 
     private final AuthService authService;

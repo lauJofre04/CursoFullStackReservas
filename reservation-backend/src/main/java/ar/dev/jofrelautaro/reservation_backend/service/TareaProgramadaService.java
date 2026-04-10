@@ -39,7 +39,7 @@ public class TareaProgramadaService {
     private final ModuloRepository moduloRepository; // 🔌 NUEVO, si usás módulos en tus tareas
     private final EmailService emailService;
 
-    @Value("${app.frontend.base-url:http://localhost:5173}")
+    @Value("${app.frontend.base-url:https://devcursos-lj.vercel.app/}")
     private String frontendBaseUrl;
     // private final InscripcionRepository inscripcionRepository; <-- Descomentá si usás esto
 
