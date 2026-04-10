@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // 1. Creamos nuestra propia versión de Axios con la URL base de tu Spring Boot
 const clienteAxios = axios.create({
-    baseURL: import.meta.env.VITE_API_URL
+    baseURL: import.meta.env.VITE_API_URL + "/api"
 });
 
 // 2. El Interceptor (El "empleado de aduana")

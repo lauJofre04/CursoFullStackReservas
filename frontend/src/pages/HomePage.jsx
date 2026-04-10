@@ -12,7 +12,7 @@ export const HomePage = () => {
   useEffect(() => {
     const fetchCursos = async () => {
       try {
-        const res = await clienteAxios.get('/cursos');
+        const res = await clienteAxios.get('/api/cursos');
         console.log("Lo que responde el backend:", res.data); // 👀 ¡Agregá esto!
         
         // Si ves en la consola que tus cursos están adentro de un "content", cambialo a esto:
