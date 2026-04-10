@@ -79,19 +79,23 @@ public class MercadoPagoService {
         List<PreferenceItemRequest> items = new ArrayList<>();
         items.add(itemRequest);
 
-        // 4. URLs de retorno (A dónde redirige MP después de pagar)
+        // 1. Guardamos tu URL pública de Ngrok (la que sacaste de la terminal)
+        String ngrokUrl = "https://bausond-hermelinda-hyperphysical.ngrok-free.dev";
+
+        // 2. Usamos Ngrok en vez de localhost para engañar al PolicyAgent
         PreferenceBackUrlsRequest backUrls = PreferenceBackUrlsRequest.builder()
-                .success("http://localhost:5173/pago/exito")
-                .failure("http://localhost:5173/pago/error")
+                .success(ngrokUrl + "/pago/exito")
+                .failure(ngrokUrl + "/pago/error")
                 .build();
 
-        System.out.println("🔗 URLs configuradas: Success=http://localhost:5173/pago/exito, Failure=http://localhost:5173/pago/error");
+        System.out.println("🔗 URLs configuradas para evitar el 403: " + ngrokUrl);
 
-        // 5. Configuración MÍNIMA para Checkout Pro (sin campos que puedan causar problemas)
+        // 3. Configuración con Checkout Pro incluyendo el Webhook (notificationUrl)
         PreferenceRequest preferenceRequest = PreferenceRequest.builder()
                 .items(items)
                 .backUrls(backUrls)
                 .autoReturn("approved")
+                .notificationUrl(ngrokUrl + "/api/webhooks/mercadopago") // ¡LA LLAVE MÁGICA DEL WEBHOOK!
                 .build();
 
         System.out.println("📤 Enviando preferencia a Mercado Pago API...");
