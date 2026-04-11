@@ -1,17 +1,19 @@
 package ar.dev.jofrelautaro.reservation_backend.model.entity;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Set;
+
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Entity
 @Table(name = "cursos")
@@ -53,6 +55,15 @@ public class Curso {
     @UpdateTimestamp
     @Column(name = "fecha_actualizacion")
     private LocalDateTime fechaActualizacion;
+
+    // Profesores dueños del curso
+    @ManyToMany
+    @JoinTable(
+        name = "curso_profesores",
+        joinColumns = @JoinColumn(name = "curso_id"),
+        inverseJoinColumns = @JoinColumn(name = "usuario_id")
+    )
+    private Set<Usuario> profesores;
 
     // Adentro de Curso.java
     @OneToMany(mappedBy = "curso", cascade = CascadeType.ALL)

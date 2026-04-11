@@ -1,12 +1,15 @@
 package ar.dev.jofrelautaro.reservation_backend.repository;
 
-import ar.dev.jofrelautaro.reservation_backend.model.entity.Curso;
+import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-import java.util.Optional;
+
+import ar.dev.jofrelautaro.reservation_backend.model.entity.Curso;
+import ar.dev.jofrelautaro.reservation_backend.model.entity.Usuario;
 
 @Repository
 public interface CursoRepository extends JpaRepository<Curso, Long> {
@@ -16,4 +19,6 @@ public interface CursoRepository extends JpaRepository<Curso, Long> {
     
 
     Optional<Curso> findByIdAndActivoTrue(Long id);
+
+    List<Curso> findByProfesoresAndActivoTrue(Usuario profesor);
 }

@@ -2,5 +2,6 @@ package ar.dev.jofrelautaro.reservation_backend.model.entity;
 
 public enum Rol {
     ADMIN,
+    PROFESOR,
     ESTUDIANTE
 }

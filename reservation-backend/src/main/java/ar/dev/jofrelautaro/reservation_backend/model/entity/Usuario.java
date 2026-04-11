@@ -1,13 +1,17 @@
 package ar.dev.jofrelautaro.reservation_backend.model.entity;
 
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
+
 import jakarta.persistence.*;
 import lombok.*;
+
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.util.Collection;
-import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name = "usuarios")
@@ -56,6 +60,11 @@ public class Usuario implements UserDetails { // 🔥 Implementamos UserDetails
     @Builder.Default
     @Column(name = "email_verificado")
     private Boolean emailVerificado = false;
+
+    // Cursos donde el usuario es profesor
+    @ManyToMany(mappedBy = "profesores")
+    @JsonIgnore
+    private Set<Curso> cursosProfesor;
 
     // === MÉTODOS DE SPRING SECURITY ===
 

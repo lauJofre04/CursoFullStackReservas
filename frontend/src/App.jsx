@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { PanelPage } from './pages/PanelPage';
+import { ProfesorPanelPage } from './pages/ProfesorPanelPage';
 import { HomePage } from './pages/HomePage';
 import { Navbar } from './components/Navbar';
 import { CursoDetallePage } from './pages/CursoDetalle';
@@ -39,6 +40,14 @@ function App() {
           element={
             <ProtectedRoute>
               <PanelPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/profesor-panel" 
+          element={
+            <ProtectedRoute>
+              <ProfesorPanelPage />
             </ProtectedRoute>
           } 
         />

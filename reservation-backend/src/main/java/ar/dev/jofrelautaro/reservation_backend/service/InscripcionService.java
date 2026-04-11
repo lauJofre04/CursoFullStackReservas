@@ -4,6 +4,7 @@ import ar.dev.jofrelautaro.reservation_backend.model.dto.CursoInscritoDTO;
 import ar.dev.jofrelautaro.reservation_backend.model.dto.InscripcionAdminRequest;
 import ar.dev.jofrelautaro.reservation_backend.model.entity.Curso;
 import ar.dev.jofrelautaro.reservation_backend.model.entity.Inscripcion;
+import ar.dev.jofrelautaro.reservation_backend.model.entity.Rol;
 import ar.dev.jofrelautaro.reservation_backend.model.entity.Usuario;
 import ar.dev.jofrelautaro.reservation_backend.repository.CursoRepository;
 import ar.dev.jofrelautaro.reservation_backend.repository.InscripcionRepository;
@@ -171,5 +172,25 @@ public class InscripcionService {
         }
 
         return (double) evaluacionesAprobadas / totalEvaluaciones * 100.0;
+    }
+
+    /**
+     * Obtener alumnos inscritos en un curso (solo para profesores del curso o admin)
+     */
+    public List<Inscripcion> obtenerAlumnosDelCurso(Long cursoId) {
+        // Verificar permisos
+        String emailUsuario = SecurityContextHolder.getContext().getAuthentication().getName();
+        Usuario usuario = usuarioRepository.findByEmail(emailUsuario)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        
+        Curso curso = cursoRepository.findByIdAndActivoTrue(cursoId)
+                .orElseThrow(() -> new RuntimeException("Curso no encontrado"));
+        
+        // Solo admin o profesor del curso pueden ver los alumnos
+        if (usuario.getRol() != Rol.ADMIN && !curso.getProfesores().contains(usuario)) {
+            throw new RuntimeException("No tienes permisos para ver los alumnos de este curso");
+        }
+        
+        return inscripcionRepository.findByCursoId(cursoId);
     }
 }

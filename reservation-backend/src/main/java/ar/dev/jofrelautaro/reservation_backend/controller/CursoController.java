@@ -73,4 +73,10 @@ public class CursoController {
         cursoService.eliminarCurso(id);
         return ResponseEntity.noContent().build(); // Devuelve un 204 No Content, ideal para borrados
     }
+
+    // 👨‍🏫 Asignar profesor a un curso (solo admin)
+    @PostMapping("/{cursoId}/profesores/{profesorId}")
+    public ResponseEntity<Curso> asignarProfesor(@PathVariable Long cursoId, @PathVariable Long profesorId) {
+        return ResponseEntity.ok(cursoService.asignarProfesor(cursoId, profesorId));
+    }
 }

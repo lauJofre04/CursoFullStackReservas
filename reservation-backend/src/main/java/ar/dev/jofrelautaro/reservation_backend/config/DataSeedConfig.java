@@ -9,7 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.crypto.password.PasswordEncoder;
+
+import java.util.Set;
 
 @Configuration
 @RequiredArgsConstructor
@@ -17,7 +18,7 @@ public class DataSeedConfig {
 
     private final UsuarioRepository usuarioRepository;
     private final CursoRepository cursoRepository;
-    private final PasswordEncoder passwordEncoder; // Crítico para que el login funcione
+    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder; // Crítico para que el login funcione
 
     @Bean
     public CommandLineRunner loadData() {
@@ -36,6 +37,16 @@ public class DataSeedConfig {
                 admin.setEmailVerificado(true);
                 usuarioRepository.save(admin);
 
+                // 2. Crear un Profesor de prueba
+                Usuario profesor = new Usuario();
+                profesor.setNombre("Profesor Demo");
+                profesor.setEmail("profesor@plataforma.com");
+                profesor.setPassword(passwordEncoder.encode("profesor123"));
+                profesor.setRol(Rol.PROFESOR);
+                profesor.setActivo(true);
+                profesor.setEmailVerificado(true);
+                usuarioRepository.save(profesor);
+
                 // 2. Crear un Alumno de prueba
                 Usuario alumno = new Usuario();
                 alumno.setNombre("Juan Estudiante");
@@ -52,6 +63,7 @@ public class DataSeedConfig {
                 curso1.setDescripcion("Aprende a crear APIs robustas y dockerizar tus aplicaciones.");
                 curso1.setPrecio(50000.0);
                 curso1.setActivo(true);
+                curso1.setProfesores(Set.of(profesor)); // Asignar profesor
                 cursoRepository.save(curso1);
 
                 Curso curso2 = new Curso();
@@ -59,6 +71,7 @@ public class DataSeedConfig {
                 curso2.setDescripcion("De cero a experto creando interfaces dinámicas.");
                 curso2.setPrecio(45000.0);
                 curso2.setActivo(true);
+                curso2.setProfesores(Set.of(profesor)); // Asignar profesor
                 cursoRepository.save(curso2);
 
                 System.out.println("✅ ¡Data Seeding completado! Tenés 2 usuarios y 2 cursos listos.");
