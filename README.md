@@ -13,7 +13,7 @@ Este proyecto fue diseñado con una arquitectura de software orientada a la esca
 ## 🚀 Demo en Vivo
 
 La plataforma se encuentra completamente funcional y desplegada en la nube.
-🔗 **Acceder a DevCursos:** [Reemplazar con tu link de Vercel]
+🔗 **Acceder a DevCursos: https://devcursos-lj.vercel.app/home
 
 Para facilitar la revisión del sistema por parte de reclutadores y líderes técnicos, la base de datos cuenta con perfiles de prueba pre-cargados (no es necesario registrarse):
 
@@ -82,6 +82,6 @@ Si deseas auditar o correr este proyecto en tu entorno de desarrollo:
 ## 📩 Contacto
 
 **Lautaro Jofre**
-* 🎓 Estudiante de Ingeniería en Sistemas de Información (UTN / UNS)
-* 💼 LinkedIn: [Tu perfil de LinkedIn]
+* 🎓 Estudiante de Ingeniería en Sistemas de Información (UTN)
+* 💼 LinkedIn: www.linkedin.com/in/lautaro-jofre
 * 🌐 Portfolio: [portfolio-web-jofre-lautaro.vercel.app](https://portfolio-web-jofre-lautaro.vercel.app/)
