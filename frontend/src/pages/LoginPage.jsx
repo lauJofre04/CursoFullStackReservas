@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import clienteAxios from '../api/axiosConfig'; 
-import { useAuth } from '../context/AuthContext'; // 1. Importamos el contexto
+import { useAuth } from '../context/AuthContext'; 
+import { GoogleLogin } from '@react-oauth/google';// 1. Importamos el contexto
 
 export const LoginPage = () => {
   const [email, setEmail] = useState('');
