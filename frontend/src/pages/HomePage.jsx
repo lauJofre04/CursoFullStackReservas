@@ -71,6 +71,13 @@ export const HomePage = () => {
                 </div>
               </div>
 
+              <button 
+                onClick={() => { throw new Error("¡Bomba en el Frontend! React no resistió 💥"); }}
+                className="bg-red-600 text-white p-4 font-bold rounded-lg my-4"
+              >
+                🚨 Explotar Frontend (Sentry Test)
+              </button>
+
             </div>
           ))}
 
