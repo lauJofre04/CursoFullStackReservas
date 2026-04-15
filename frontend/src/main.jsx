@@ -2,13 +2,15 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
-import { GoogleAuthProvider } from './context/GoogleAuthContext.jsx'
+import { GoogleAuthProvider } from '@react-oauth/google'
 
+const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <GoogleAuthProvider>
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    {/* Envolvemos toda la aplicación con el proveedor de Google */}
+    <GoogleOAuthProvider clientId={clientId}>
       <App />
-    </GoogleAuthProvider>
-  </StrictMode>,
-)
+    </GoogleOAuthProvider>
+  </React.StrictMode>
+);
