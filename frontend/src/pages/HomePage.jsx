@@ -37,13 +37,7 @@ export const HomePage = () => {
           Nuestros Cursos Disponibles
         </h1>
 
-        <button 
-        onClick={() => { throw new Error("¡Bomba en el Frontend! React no resistió 💥"); }}
-        className="bg-red-600 text-white p-4 font-bold rounded-lg my-4"
-      >
-        🚨 Explotar Frontend (Sentry Test)
-      </button>
-
+        
         {/* Grilla responsiva de Tailwind: 1 columna en celu, 2 en tablet, 3 en PC */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           
