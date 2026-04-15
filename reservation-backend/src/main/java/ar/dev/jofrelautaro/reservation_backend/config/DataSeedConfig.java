@@ -23,11 +23,26 @@ public class DataSeedConfig {
     @Bean
     public CommandLineRunner loadData() {
         return args -> {
-            // Solo inyectamos datos si la tabla de usuarios está vacía
+            // SIEMPRE asegurar que existe el usuario "profesor" - es crítico para el sistema
+            if (!usuarioRepository.existsByEmail("profesor@plataforma.com")) {
+                Usuario profesor = new Usuario();
+                profesor.setNombre("Profesor Demo");
+                profesor.setEmail("profesor@plataforma.com");
+                profesor.setPassword(passwordEncoder.encode("profesor123"));
+                profesor.setRol(Rol.PROFESOR);
+                profesor.setActivo(true);
+                profesor.setEmailVerificado(true);
+                usuarioRepository.save(profesor);
+                System.out.println("✅ Usuario profesor creado correctamente");
+            } else {
+                System.out.println("👍 Usuario profesor ya existe en la base de datos");
+            }
+
+            // Solo inyectamos el resto de datos si la tabla de usuarios está vacía
             if (usuarioRepository.count() == 0) {
                 System.out.println("🌱 Base de datos vacía detectada. Iniciando Data Seeding...");
 
-                // 1. Crear a Lautaro como Profesor/Admin
+                // 1. Crear a Lautaro como Admin
                 Usuario admin = new Usuario();
                 admin.setNombre("Lautaro");
                 admin.setEmail("admin@plataforma.com"); // Usá este para entrar
@@ -37,17 +52,11 @@ public class DataSeedConfig {
                 admin.setEmailVerificado(true);
                 usuarioRepository.save(admin);
 
-                // 2. Crear un Profesor de prueba
-                Usuario profesor = new Usuario();
-                profesor.setNombre("Profesor Demo");
-                profesor.setEmail("profesor@plataforma.com");
-                profesor.setPassword(passwordEncoder.encode("profesor123"));
-                profesor.setRol(Rol.PROFESOR);
-                profesor.setActivo(true);
-                profesor.setEmailVerificado(true);
-                usuarioRepository.save(profesor);
+                // 2. Obtener el profesor que ya creamos
+                Usuario profesor = usuarioRepository.findByEmail("profesor@plataforma.com")
+                        .orElseThrow(() -> new RuntimeException("Profesor no encontrado"));
 
-                // 2. Crear un Alumno de prueba
+                // 3. Crear un Alumno de prueba
                 Usuario alumno = new Usuario();
                 alumno.setNombre("Juan Estudiante");
                 alumno.setEmail("alumno@prueba.com");
@@ -57,7 +66,7 @@ public class DataSeedConfig {
                 alumno.setEmailVerificado(true);
                 usuarioRepository.save(alumno);
 
-                // 3. Crear tus Cursos estrella
+                // 4. Crear tus Cursos estrella
                 Curso curso1 = new Curso();
                 curso1.setTitulo("Curso Spring Boot Máster");
                 curso1.setDescripcion("Aprende a crear APIs robustas y dockerizar tus aplicaciones.");
@@ -76,7 +85,7 @@ public class DataSeedConfig {
 
                 System.out.println("✅ ¡Data Seeding completado! Tenés 2 usuarios y 2 cursos listos.");
             } else {
-                System.out.println("👍 La base de datos ya tiene información. Se omite el Data Seeding.");
+                System.out.println("👍 La base de datos ya tiene información. Se omite el resto del seeding.");
             }
         };
     }

@@ -71,4 +71,16 @@ public class AuthController {
         response.put("mensaje", "Si el correo existe y no está verificado, te enviamos un nuevo enlace.");
         return ResponseEntity.ok(response);
     }
+    @PostMapping("/google")
+    public ResponseEntity<?> loginConGoogle(@RequestBody Map<String, String> request) {
+        String googleToken = request.get("token");
+        
+        try {
+            // Acá llamaremos a tu servicio para validar y generar tu JWT
+            String tuJwt = authService.loguearConGoogle(googleToken);
+            return ResponseEntity.ok(Map.of("token", tuJwt));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Token de Google inválido: " + e.getMessage()));
+        }
+    }
 }

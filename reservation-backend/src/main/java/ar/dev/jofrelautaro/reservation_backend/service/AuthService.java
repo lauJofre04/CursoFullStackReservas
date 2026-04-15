@@ -3,6 +3,7 @@ package ar.dev.jofrelautaro.reservation_backend.service;
 import ar.dev.jofrelautaro.reservation_backend.auth.AuthResponse;
 import ar.dev.jofrelautaro.reservation_backend.auth.LoginRequest;
 import ar.dev.jofrelautaro.reservation_backend.auth.RegisterRequest;
+import ar.dev.jofrelautaro.reservation_backend.model.entity.Rol;
 import ar.dev.jofrelautaro.reservation_backend.model.entity.TokenRecuperacion;
 import ar.dev.jofrelautaro.reservation_backend.model.entity.TokenVerificacion;
 import ar.dev.jofrelautaro.reservation_backend.model.entity.Usuario;
@@ -12,12 +13,18 @@ import ar.dev.jofrelautaro.reservation_backend.repository.UsuarioRepository;
 import ar.dev.jofrelautaro.reservation_backend.security.JwtService;
 import lombok.RequiredArgsConstructor;
 
+import java.util.Collections;
 import java.util.Optional;
 
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
 
 @Service
 @RequiredArgsConstructor
@@ -216,5 +223,41 @@ public class AuthService {
                 "Si no fuiste vos, ignorá este mensaje.";
 
         emailService.enviarCorreoSimple(usuario.getEmail(), "Nuevo enlace de verificación - DevCursos", cuerpoMail);
+    }
+    public String loguearConGoogle(String tokenGoogle) throws Exception {
+        GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())
+            .setAudience(Collections.singletonList("689460302491-jl383p6i5tktdu1do8od0bl7egj2u9ve.apps.googleusercontent.com"))
+            .build();
+
+        GoogleIdToken idToken = verifier.verify(tokenGoogle);
+        if (idToken != null) {
+            GoogleIdToken.Payload payload = idToken.getPayload();
+            String email = payload.getEmail();
+            String nombre = (String) payload.get("name");
+
+            // Buscamos si ya existe
+            Optional<Usuario> usuarioOpt = repository.findByEmail(email);
+            Usuario usuario;
+
+            if (usuarioOpt.isPresent()) {
+                usuario = usuarioOpt.get(); // Ya es nuestro alumno
+            } else {
+                // ¡Es nuevo! Lo registramos automáticamente sin contraseña
+                usuario = Usuario.builder()
+                    .email(email)
+                    .nombre(nombre)
+                    .password(passwordEncoder.encode(java.util.UUID.randomUUID().toString())) // Contraseña basura segura
+                    .rol(Rol.ESTUDIANTE) // Rol de estudiante
+                    .activo(true)
+                    .emailVerificado(true) // Lo verificamos automáticamente si viene de Google
+                    .build();
+                repository.save(usuario);
+            }
+
+            // Generamos TU token JWT normal y lo devolvemos
+            return jwtService.generateToken(usuario);
+        } else {
+            throw new RuntimeException("Token de Google inválido");
+        }
     }
 }

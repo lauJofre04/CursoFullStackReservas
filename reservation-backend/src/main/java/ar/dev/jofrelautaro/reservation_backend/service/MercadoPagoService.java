@@ -48,54 +48,63 @@ public class MercadoPagoService {
 
     /**
      * Crea una preferencia de pago de Mercado Pago para Checkout Pro
-     * Devuelve los detalles completos de la preferencia incluyendo su ID
-     * También guarda un registro de Pago en la BD con estado PENDIENTE
+     * Guarda un registro inicial en la BD para vincularlo mediante external_reference
      */
     public Map<String, Object> crearPreferenciaCheckoutPro(Long cursoId) throws Exception {
         System.out.println("🚀 Iniciando creación de preferencia para Checkout Pro - Curso: " + cursoId);
-        System.out.println("🔐 Token actual en config: " + (MercadoPagoConfig.getAccessToken() != null ? "✅ CONFIGURADO" : "❌ NULL"));
         
         // 1. Obtener el usuario actual desde el contexto de seguridad
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuario no autenticado"));
         
-        // 2. Buscamos el curso en tu BD para saber qué estamos cobrando
+        // 2. Buscamos el curso
         Curso curso = cursoRepository.findById(cursoId)
                 .orElseThrow(() -> new RuntimeException("Curso no encontrado"));
 
         System.out.println("📦 Curso encontrado: " + curso.getTitulo() + " - Precio: $" + curso.getPrecio());
 
-        // 3. Armamos el ítem (lo que el usuario va a comprar) - VERSIÓN SIMPLIFICADA
+        // 3. Creamos el registro en la BD ANTES de llamar a MP para obtener nuestro propio ID
+        Pago pagoProvisorio = Pago.builder()
+                .usuario(usuario)
+                .curso(curso)
+                .monto(BigDecimal.valueOf(curso.getPrecio()))
+                .estado("INICIADO")
+                .descripcion("Pago de curso: " + curso.getTitulo())
+                .build();
+        
+        pagoProvisorio = pagoRepository.save(pagoProvisorio);
+        System.out.println("💾 Pago provisorio guardado con ID propio: " + pagoProvisorio.getId());
+
+        // 4. Armamos el ítem para Mercado Pago
         PreferenceItemRequest itemRequest = PreferenceItemRequest.builder()
                 .id(curso.getId().toString())
                 .title(curso.getTitulo())
                 .description(curso.getDescripcion())
                 .quantity(1)
                 .currencyId("ARS")
-                .unitPrice(new BigDecimal(curso.getPrecio()))
+                .unitPrice(BigDecimal.valueOf(curso.getPrecio()))
                 .build();
 
         List<PreferenceItemRequest> items = new ArrayList<>();
         items.add(itemRequest);
 
-        // 1. Guardamos tu URL pública de Ngrok (la que sacaste de la terminal)
-        String ngrokUrl = "https://bausond-hermelinda-hyperphysical.ngrok-free.dev";
+        // URL base del servidor en Producción (Render)
+        // NOTA: Lo ideal a futuro es mover esto al application.properties
+        String renderUrl = "https://cursofullstackreservas.onrender.com";
 
-        // 2. Usamos Ngrok en vez de localhost para engañar al PolicyAgent
         PreferenceBackUrlsRequest backUrls = PreferenceBackUrlsRequest.builder()
-                .success(ngrokUrl + "/pago/exito")
-                .failure(ngrokUrl + "/pago/error")
+                .success(renderUrl + "/pago/exito")
+                .failure(renderUrl + "/pago/error")
                 .build();
 
-        System.out.println("🔗 URLs configuradas para evitar el 403: " + ngrokUrl);
-
-        // 3. Configuración con Checkout Pro incluyendo el Webhook (notificationUrl)
+        // 5. Configuración con Checkout Pro incluyendo Webhook y nuestro ID (externalReference)
         PreferenceRequest preferenceRequest = PreferenceRequest.builder()
                 .items(items)
                 .backUrls(backUrls)
                 .autoReturn("approved")
-                .notificationUrl(ngrokUrl + "/api/webhooks/mercadopago") // ¡LA LLAVE MÁGICA DEL WEBHOOK!
+                .notificationUrl(renderUrl + "/api/webhooks/mercadopago") 
+                .externalReference(pagoProvisorio.getId().toString()) // EL FIX CLAVE
                 .build();
 
         System.out.println("📤 Enviando preferencia a Mercado Pago API...");
@@ -107,29 +116,19 @@ public class MercadoPagoService {
             PreferenceClient client = new PreferenceClient();
             Preference preference = client.create(preferenceRequest);
             
-            System.out.println("✅ Preference creada exitosamente!");
-            System.out.println("✅ ID: " + preference.getId());
-            System.out.println("✅ Init Point: " + preference.getInitPoint());
+            System.out.println("✅ Preference creada exitosamente! ID: " + preference.getId());
             
-            // 7. Guardamos el pago en nuestra BD con estado PENDIENTE
-            Pago pago = Pago.builder()
-                    .usuario(usuario)
-                    .curso(curso)
-                    .mercadoPagoPreferenceId(preference.getId())
-                    .monto(new BigDecimal(curso.getPrecio()))
-                    .estado("PENDIENTE")
-                    .descripcion("Pago de curso: " + curso.getTitulo())
-                    .build();
+            // 7. Actualizamos el pago en BD con el ID de la preferencia de MP
+            pagoProvisorio.setMercadoPagoPreferenceId(preference.getId());
+            pagoRepository.save(pagoProvisorio);
             
-            pagoRepository.save(pago);
-            System.out.println("💾 Pago guardado en la BD con ID: " + pago.getId());
-            
-            // 8. Devolvemos tanto el ID como el init_point para flexibilidad
+            // 8. Devolvemos tanto el ID como el init_point al frontend
             Map<String, Object> response = new HashMap<>();
             response.put("id", preference.getId());
             response.put("init_point", preference.getInitPoint());
             
             return response;
+            
         } catch (com.mercadopago.exceptions.MPApiException apiEx) {
             System.err.println("❌ ERROR API DE MERCADO PAGO:");
             System.err.println("   Status: " + apiEx.getApiResponse().getStatusCode());
@@ -139,39 +138,43 @@ public class MercadoPagoService {
     }
 
     /**
-     * Procesa el webhook de Mercado Pago cuando un pago es aprobado
-     * Actualiza el estado del pago y matricula al usuario automáticamente
+     * Procesa el webhook de Mercado Pago cuando hay novedades en un pago.
+     * Busca el pago mediante el external_reference y matricula al usuario si es aprobado.
      */
     public void procesarWebhookPago(Long paymentId) throws Exception {
         System.out.println("🔔 Procesando webhook de Mercado Pago - Payment ID: " + paymentId);
         
         try {
-            // 1. Obtener los detalles del pago de Mercado Pago
+            // 1. Obtener los detalles del pago desde Mercado Pago
             PaymentClient paymentClient = new PaymentClient();
             Payment payment = paymentClient.get(paymentId);
             
             System.out.println("💳 Pago obtenido - Status: " + payment.getStatus());
-            System.out.println("💳 Monto: " + payment.getTransactionAmount());
             
-            // 2. Buscar el pago en nuestra BD por el ID de pago de Mercado Pago
-            Pago pago = pagoRepository.findByMercadoPagoPaymentId(paymentId.toString())
+            // 2. Extraer NUESTRO ID de base de datos desde la respuesta de MP
+            String miPagoId = payment.getExternalReference();
+            
+            if (miPagoId == null) {
+                System.out.println("⚠️ El pago de MP no tiene external_reference. Imposible vincularlo.");
+                return;
+            }
+
+            // 3. Buscar el pago en nuestra BD por nuestro ID
+            Pago pago = pagoRepository.findById(Long.parseLong(miPagoId))
                     .orElse(null);
             
-            // Si no lo encontramos por payment ID, intentamos por preferenceId
-            // El objeto Payment de MercadoPago SDK podría no tener getPreferenceId()
-            // así que usamos el monto y status como índices adicionales
             if (pago == null) {
-                System.out.println("⚠️ No se encontró pago por ID de MP. Status del pago: " + payment.getStatus());
+                System.out.println("⚠️ No se encontró el pago en BD con ID propio: " + miPagoId);
                 return;
             }
             
             System.out.println("📦 Pago en BD encontrado: " + pago.getId());
             
-            // 3. Verificar que el pago fue aprobado
+            // 4. Verificar que el pago fue aprobado
             if ("approved".equals(payment.getStatus())) {
                 System.out.println("✅ ¡PAGO APROBADO!");
                 
-                // 4. Actualizar el pago en la BD
+                // Actualizar los datos definitivos del pago
                 pago.setMercadoPagoPaymentId(paymentId.toString());
                 pago.setEstado("APROBADO");
                 pago.setFechaAprobacion(LocalDateTime.now());
@@ -186,13 +189,14 @@ public class MercadoPagoService {
                 
                 System.out.println("✅ ¡Usuario matriculado exitosamente!");
             } else {
-                System.out.println("⚠️ Pago no aprobado. Estado: " + payment.getStatus());
+                System.out.println("⚠️ Pago no aprobado. Estado actual: " + payment.getStatus());
+                pago.setMercadoPagoPaymentId(paymentId.toString());
                 pago.setEstado(payment.getStatus().toUpperCase());
                 pagoRepository.save(pago);
             }
             
         } catch (com.mercadopago.exceptions.MPApiException apiEx) {
-            System.err.println("❌ ERROR al obtener datos de Mercado Pago:");
+            System.err.println("❌ ERROR al obtener datos de Mercado Pago por Webhook:");
             System.err.println("   Status: " + apiEx.getApiResponse().getStatusCode());
             System.err.println("   Content: " + apiEx.getApiResponse().getContent());
             throw apiEx;

@@ -188,12 +188,20 @@ public class CursoService {
         return cursoRepository.save(curso);
     }
 
-    // Obtener cursos donde el usuario actual es profesor
+    // Obtener cursos donde el usuario actual es profesor (o todos si es ADMIN)
     public List<Curso> obtenerCursosDelProfesor() {
         String emailUsuario = SecurityContextHolder.getContext().getAuthentication().getName();
         Usuario usuario = usuarioRepository.findByEmail(emailUsuario)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
         
+        // Si es ADMIN, retorna todos los cursos activos
+        if (usuario.getRol() == Rol.ADMIN) {
+            return cursoRepository.findAllByActivoTrue(
+                    org.springframework.data.domain.PageRequest.of(0, Integer.MAX_VALUE)
+            ).getContent();
+        }
+        
+        // Si es profesor, solo retorna sus cursos
         return cursoRepository.findByProfesoresAndActivoTrue(usuario);
     }
 
