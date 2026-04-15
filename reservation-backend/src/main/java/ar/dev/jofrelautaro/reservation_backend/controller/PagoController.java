@@ -12,7 +12,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/pagos")
 @RequiredArgsConstructor
-@CrossOrigin // Importante para que React no chille con CORS
+
 public class PagoController {
 
     private final MercadoPagoService mercadoPagoService;

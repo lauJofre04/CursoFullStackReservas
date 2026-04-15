@@ -15,7 +15,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/recursos")
 @RequiredArgsConstructor
-@CrossOrigin
+
 public class RecursoController {
 
     private final RecursoService recursoService;

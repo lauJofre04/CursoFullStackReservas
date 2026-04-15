@@ -19,7 +19,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/evaluaciones")
 @RequiredArgsConstructor
-@CrossOrigin
+
 public class EvaluacionController {
 
     private final EvaluacionService evaluacionService;

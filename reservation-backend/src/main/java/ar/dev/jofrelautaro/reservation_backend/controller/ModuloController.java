@@ -15,7 +15,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/modulos")
 @RequiredArgsConstructor
-@CrossOrigin
+
 public class ModuloController {
 
     private final ModuloService moduloService;
