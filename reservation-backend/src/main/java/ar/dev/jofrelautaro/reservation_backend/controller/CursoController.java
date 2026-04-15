@@ -34,7 +34,7 @@ public class CursoController {
     public ResponseEntity<Curso> obtenerPorId(@PathVariable Long id) {
         return ResponseEntity.ok(cursoService.obtenerCursoPorId(id));
     }
-
+    
     // ➕ Crear un curso nuevo (con imagen subida a Cloudinary)
     @PostMapping
     public ResponseEntity<Curso> crear(

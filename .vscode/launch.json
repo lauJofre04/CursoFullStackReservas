@@ -24,7 +24,8 @@
                 "MP_PUBLIC_KEY": "APP_USR-55877164-bc1c-4927-839f-83321002cfa4",
                 "CLOUDINARY_CLOUD_NAME": "dbwq8gwxs",
                 "CLOUDINARY_API_KEY": "396523953186898",
-                "CLOUDINARY_API_SECRET": "vuUlEfpFtEmSBUwnWHaRxTSJlLA"
+                "CLOUDINARY_API_SECRET": "vuUlEfpFtEmSBUwnWHaRxTSJlLA",
+                "SENTRY_DSN": "https://57cba3c035db60dc1b9bbe36f359e385@o4511226331594752.ingest.us.sentry.io/4511226334019584"
             }
         }
     ]
