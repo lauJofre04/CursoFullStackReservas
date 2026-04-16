@@ -54,7 +54,7 @@ public class MercadoPagoService {
     public Map<String, Object> crearPreferenciaCheckoutPro(Long cursoId) throws Exception {
         System.out.println("🚀 Iniciando creación de preferencia para Checkout Pro - Curso: " + cursoId);
         
-        // 1. Obtener el usuario actual desde el contexto de seguridad
+        // 1. Obtener el usuario
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuario no autenticado"));
@@ -65,7 +65,7 @@ public class MercadoPagoService {
 
         System.out.println("📦 Curso encontrado: " + curso.getTitulo() + " - Precio: $" + curso.getPrecio());
 
-        // 3. Creamos el registro en la BD ANTES de llamar a MP para obtener nuestro propio ID
+        // 3. Pago provisorio con UUID único
         Pago pagoProvisorio = Pago.builder()
                 .usuario(usuario)
                 .curso(curso)
@@ -76,13 +76,11 @@ public class MercadoPagoService {
                 .build();
         
         pagoProvisorio = pagoRepository.save(pagoProvisorio);
-        System.out.println("💾 Pago provisorio guardado con ID propio: " + pagoProvisorio.getId());
 
-        // 4. Armamos el ítem para Mercado Pago
+        // 4. Ítem SUPER BÁSICO (Para evitar el Error 403 de Policies)
+        // 🚨 NO agregues .description() ni .id() acá 🚨
         PreferenceItemRequest itemRequest = PreferenceItemRequest.builder()
-                .id(curso.getId().toString())
                 .title(curso.getTitulo())
-                .description(curso.getDescripcion())
                 .quantity(1)
                 .currencyId("ARS")
                 .unitPrice(BigDecimal.valueOf(curso.getPrecio()))
@@ -91,28 +89,27 @@ public class MercadoPagoService {
         List<PreferenceItemRequest> items = new ArrayList<>();
         items.add(itemRequest);
 
-        // URL base del servidor en Producción (Render)
-        // NOTA: Lo ideal a futuro es mover esto al application.properties
+        // 5. URLs: BackUrls van al FRONTEND, NotificationUrl va al BACKEND
         String renderUrl = "https://cursofullstackreservas.onrender.com";
         String vercelUrl = "https://devcursos-lj.vercel.app";
 
         PreferenceBackUrlsRequest backUrls = PreferenceBackUrlsRequest.builder()
-                .success(renderUrl + "/pago/exito")
-                .failure(renderUrl + "/pago/error")
+                .success(vercelUrl + "/mis-cursos") // 👈 El usuario vuelve a Vercel
+                .failure(vercelUrl + "/home")       // 👈 El usuario vuelve a Vercel
+                .pending(vercelUrl + "/mis-cursos") // 👈 (Requisito de MP)
                 .build();
 
-        // 5. Configuración con Checkout Pro incluyendo Webhook y nuestro ID (externalReference)
         PreferenceRequest preferenceRequest = PreferenceRequest.builder()
                 .items(items)
                 .backUrls(backUrls)
                 .autoReturn("approved")
-                .notificationUrl(vercelUrl + "/api/webhooks/mercadopago") 
-                .externalReference(pagoProvisorio.getId().toString()) // EL FIX CLAVE
+                .notificationUrl(renderUrl + "/api/webhooks/mercadopago") // 👈 Render recibe el Webhook silencioso
+                .externalReference(pagoProvisorio.getId().toString()) 
                 .build();
 
         System.out.println("📤 Enviando preferencia a Mercado Pago API...");
 
-        // 6. Llamamos a la API de Mercado Pago
+        // 6. Llamamos a la API
         try {
             MercadoPagoConfig.setAccessToken(mercadoPagoProperties.getAccessToken());
             
@@ -121,11 +118,9 @@ public class MercadoPagoService {
             
             System.out.println("✅ Preference creada exitosamente! ID: " + preference.getId());
             
-            // 7. Actualizamos el pago en BD con el ID de la preferencia de MP
             pagoProvisorio.setMercadoPagoPreferenceId(preference.getId());
             pagoRepository.save(pagoProvisorio);
             
-            // 8. Devolvemos tanto el ID como el init_point al frontend
             Map<String, Object> response = new HashMap<>();
             response.put("id", preference.getId());
             response.put("init_point", preference.getInitPoint());
