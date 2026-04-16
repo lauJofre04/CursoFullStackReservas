@@ -11,8 +11,31 @@ export const MisCursosPage = () => {
   useEffect(() => {
     const obtenerMisCursos = async () => {
       try {
-        const response = await clienteAxios.get('/inscripciones/mis-cursos');
-        setMisCursos(response.data);
+        let url = '';
+        
+        // 🚦 LÓGICA DE RUTEO SEGÚN EL ROL
+        if (usuario?.rol === 'PROFESOR') {
+          url = '/cursos/mis-cursos-asignados';
+        } else if (usuario?.rol === 'ADMIN') {
+          url = '/cursos'; // El admin ve absolutamente todos
+        } else {
+          url = '/inscripciones/mis-cursos'; // Los alumnos ven sus compras
+        }
+
+        const response = await clienteAxios.get(url);
+        
+        // 🧹 NORMALIZACIÓN DE DATOS
+        // Como el endpoint de profesor devuelve la entidad "Curso" directa
+        // y el de alumno devuelve un DTO de "Inscripcion", emparejamos los nombres:
+        const cursosNormalizados = response.data.map(item => ({
+          cursoId: item.cursoId || item.id, // Si no viene cursoId, usamos el id directo
+          titulo: item.titulo,
+          imagen: item.imagen || item.imagenUrl || 'https://via.placeholder.com/400x200?text=Curso', // Placeholder si no hay imagen
+          estado: item.estado || (item.activo ? 'ACTIVA' : 'INACTIVA'),
+          fechaInscripcion: item.fechaInscripcion || new Date().toISOString() // Los profes no tienen fecha de inscripción real
+        }));
+
+        setMisCursos(cursosNormalizados);
       } catch (err) {
         console.error("Error al traer los cursos del usuario:", err);
         setError(true);
@@ -21,8 +44,11 @@ export const MisCursosPage = () => {
       }
     };
 
-    obtenerMisCursos();
-  }, []);
+    // Solo ejecutamos si ya cargó el usuario del context
+    if (usuario) {
+      obtenerMisCursos();
+    }
+  }, [usuario]); // 👈 Dependencia del useEffect
 
   if (cargando) return <div className="text-center mt-20 text-xl font-bold text-gray-600">Cargando tu aprendizaje... ⏳</div>;
   if (error) return <div className="text-center mt-20 text-xl font-bold text-red-600">Hubo un error al cargar tus cursos ❌</div>;

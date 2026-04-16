@@ -28,6 +28,7 @@ export const AulaVirtualPage = () => {
   const [mensajeCertificados, setMensajeCertificados] = useState('');
   const [enviandoCertificados, setEnviandoCertificados] = useState(false);
   const navigate = useNavigate();
+  const puedeEditar = usuario?.rol === 'ADMIN' || usuario?.rol === 'PROFESOR';
 
   useEffect(() => {
     cargarDatos();
@@ -168,7 +169,7 @@ export const AulaVirtualPage = () => {
   }
 
   // Si es admin y está en modo edición, mostrar el Panel de Gestión
-  if (usuario?.rol === 'ADMIN' && modoEdicion) {
+  if (puedeEditar && modoEdicion) {
     return (
       <div className="min-h-screen bg-gray-100 p-8">
         <div className="max-w-7xl mx-auto">
@@ -425,7 +426,7 @@ export const AulaVirtualPage = () => {
           </div>
 
           {/* Botón de edición para admins */}
-          {usuario?.rol === 'ADMIN' && (
+          {puedeEditar && (
             <button
               onClick={() => setModoEdicion(true)}
               className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded font-semibold transition shadow-sm"
