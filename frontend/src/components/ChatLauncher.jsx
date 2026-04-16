@@ -21,7 +21,7 @@ export const ChatLauncher = () => {
     const token = localStorage.getItem('token');
     const client = new Client({
       brokerURL: undefined,
-      webSocketFactory: () => new SockJS('https://cursofullstackreservas.onrender.com/ws-chat', undefined, { withCredentials: false }),
+      webSocketFactory: () => new SockJS('https://cursofullstackreservas.onrender.com/api/ws-chat', undefined, { withCredentials: false }),
       connectHeaders: {
         Authorization: `Bearer ${token}`,
       },
