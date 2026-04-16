@@ -54,18 +54,15 @@ public class MercadoPagoService {
     public Map<String, Object> crearPreferenciaCheckoutPro(Long cursoId) throws Exception {
         System.out.println("🚀 Iniciando creación de preferencia para Checkout Pro - Curso: " + cursoId);
         
-        // 1. Obtener el usuario
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuario no autenticado"));
         
-        // 2. Buscamos el curso
         Curso curso = cursoRepository.findById(cursoId)
                 .orElseThrow(() -> new RuntimeException("Curso no encontrado"));
 
-        System.out.println("📦 Curso encontrado: " + curso.getTitulo() + " - Precio: $" + curso.getPrecio());
+        System.out.println("📦 Curso: " + curso.getTitulo() + " | Precio: $" + curso.getPrecio() + " | Comprador: " + usuario.getEmail());
 
-        // 3. Pago provisorio con UUID único
         Pago pagoProvisorio = Pago.builder()
                 .usuario(usuario)
                 .curso(curso)
@@ -77,8 +74,7 @@ public class MercadoPagoService {
         
         pagoProvisorio = pagoRepository.save(pagoProvisorio);
 
-        // 4. Ítem SUPER BÁSICO (Para evitar el Error 403 de Policies)
-        // 🚨 NO agregues .description() ni .id() acá 🚨
+        // 1. ÍTEM LIMPIO
         PreferenceItemRequest itemRequest = PreferenceItemRequest.builder()
                 .title(curso.getTitulo())
                 .quantity(1)
@@ -89,27 +85,36 @@ public class MercadoPagoService {
         List<PreferenceItemRequest> items = new ArrayList<>();
         items.add(itemRequest);
 
-        // 5. URLs: BackUrls van al FRONTEND, NotificationUrl va al BACKEND
+        // 2. AÑADIMOS AL PAGADOR EXPLÍCITO (Evita bloqueos antifraude)
+        com.mercadopago.client.preference.PreferencePayerRequest payer = 
+            com.mercadopago.client.preference.PreferencePayerRequest.builder()
+                .email(usuario.getEmail())
+                .name(usuario.getNombre())
+                .build();
+
+        // 3. URLs
         String renderUrl = "https://cursofullstackreservas.onrender.com";
         String vercelUrl = "https://devcursos-lj.vercel.app";
 
         PreferenceBackUrlsRequest backUrls = PreferenceBackUrlsRequest.builder()
-                .success(vercelUrl + "/mis-cursos") // 👈 El usuario vuelve a Vercel
-                .failure(vercelUrl + "/home")       // 👈 El usuario vuelve a Vercel
-                .pending(vercelUrl + "/mis-cursos") // 👈 (Requisito de MP)
+                .success(vercelUrl + "/mis-cursos") 
+                .failure(vercelUrl + "/home")       
+                .pending(vercelUrl + "/mis-cursos") 
                 .build();
 
         PreferenceRequest preferenceRequest = PreferenceRequest.builder()
                 .items(items)
+                .payer(payer) // 👈 INYECTAMOS AL PAGADOR
                 .backUrls(backUrls)
                 .autoReturn("approved")
-                .notificationUrl(renderUrl + "/api/webhooks/mercadopago") // 👈 Render recibe el Webhook silencioso
+                .notificationUrl(renderUrl + "/api/webhooks/mercadopago") 
                 .externalReference(pagoProvisorio.getId().toString()) 
                 .build();
 
-        System.out.println("📤 Enviando preferencia a Mercado Pago API...");
+        // 🚨 RADAR DE DEBUG (Si esto no sale en los logs de Render, Render no actualizó)
+        System.out.println("🔍 RADAR MP -> URL Vercel: " + vercelUrl + "/mis-cursos");
+        System.out.println("🔍 RADAR MP -> URL Webhook: " + renderUrl + "/api/webhooks/mercadopago");
 
-        // 6. Llamamos a la API
         try {
             MercadoPagoConfig.setAccessToken(mercadoPagoProperties.getAccessToken());
             
