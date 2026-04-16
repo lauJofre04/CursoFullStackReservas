@@ -94,6 +94,7 @@ public class MercadoPagoService {
         // URL base del servidor en Producción (Render)
         // NOTA: Lo ideal a futuro es mover esto al application.properties
         String renderUrl = "https://cursofullstackreservas.onrender.com";
+        String vercelUrl = "https://devcursos-lj.vercel.app";
 
         PreferenceBackUrlsRequest backUrls = PreferenceBackUrlsRequest.builder()
                 .success(renderUrl + "/pago/exito")
@@ -105,7 +106,7 @@ public class MercadoPagoService {
                 .items(items)
                 .backUrls(backUrls)
                 .autoReturn("approved")
-                .notificationUrl(renderUrl + "/api/webhooks/mercadopago") 
+                .notificationUrl(vercelUrl + "/api/webhooks/mercadopago") 
                 .externalReference(pagoProvisorio.getId().toString()) // EL FIX CLAVE
                 .build();
 
