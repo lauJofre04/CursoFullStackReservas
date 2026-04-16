@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import clienteAxios from '../api/axiosConfig';
+import { useAuth } from '../context/AuthContext'; // Para mostrar info personalizada del usuario
 
 export const HomePage = () => {
   // Estados para guardar los cursos y saber si está cargando
