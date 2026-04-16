@@ -17,6 +17,7 @@ public class EmailService {
 
     // Inyectamos la herramienta nativa de Spring para mandar correos
     private final JavaMailSender mailSender;
+    private final org.thymeleaf.TemplateEngine templateEngine;
 
     public void enviarCorreoSimple(String destinatario, String asunto, String cuerpo) {
         log.info("⏳ Intentando enviar correo a: {}", destinatario);
@@ -68,4 +69,35 @@ public class EmailService {
 
         mailSender.send(mensaje);
     }
+    // Agregá esto a tu EmailService.java
+
+ // Inyectalo en el constructor
+
+public void enviarCorreoBienvenidaHTML(String destinatario, String nombreAlumno, String tituloCurso) {
+    try {
+        log.info("📧 Generando correo HTML de bienvenida para: {}", destinatario);
+
+        // A. Preparamos los datos para Thymeleaf
+        org.thymeleaf.context.Context context = new org.thymeleaf.context.Context();
+        context.setVariable("alumnoNombre", nombreAlumno);
+        context.setVariable("cursoTitulo", tituloCurso);
+        context.setVariable("urlAcceso", "https://devcursos-lj.vercel.app/mis-cursos");
+
+        // B. Generamos el String HTML procesado
+        String cuerpoHtml = templateEngine.process("email_bienvenida", context);
+
+        // C. Preparamos el mensaje Mime (necesario para HTML)
+        MimeMessage mensaje = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(mensaje, true, "UTF-8");
+
+        helper.setTo(destinatario);
+        helper.setSubject("🎉 ¡Inscripción confirmada: " + tituloCurso + "!");
+        helper.setText(cuerpoHtml, true); // El 'true' activa el renderizado HTML
+
+        mailSender.send(mensaje);
+        log.info("✅ Correo HTML enviado con éxito.");
+    } catch (Exception e) {
+        log.error("❌ Falló el envío del correo de bienvenida: {}", e.getMessage());
+    }
+}
 }

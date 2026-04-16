@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+</head>
+<body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f9; margin: 0; padding: 20px;">
+    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 15px; overflow: hidden; shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <div style="background-color: #2563eb; padding: 30px; text-align: center;">
+            <h1 style="color: #ffffff; margin: 0; font-size: 28px;">¡Bienvenido a DevCursos! 🚀</h1>
+        </div>
+        <div style="padding: 40px; color: #334155; line-height: 1.6;">
+            <h2 style="color: #1e293b;">¡Hola, <span th:text="${alumnoNombre}">Alumno</span>!</h2>
+            <p>Estamos muy emocionados de tenerte con nosotros. Tu inscripción al curso <strong><span th:text="${cursoTitulo}">Curso</span></strong> ha sido procesada con éxito.</p>
+            
+            <div style="background-color: #eff6ff; border-left: 4px solid #2563eb; padding: 15px; margin: 25px 0;">
+                <p style="margin: 0; font-weight: bold; color: #1e40af;">Ya podés acceder a todo el contenido, clases y foros desde tu panel.</p>
+            </div>
+
+            <div style="text-align: center; margin-top: 35px;">
+                <a th:href="${urlAcceso}" 
+                   style="background-color: #2563eb; color: #ffffff; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+                   Comenzar a Aprender Ahora
+                </a>
+            </div>
+        </div>
+        <div style="background-color: #f8fafc; padding: 20px; text-align: center; color: #94a3b8; font-size: 12px;">
+            Este es un correo automático, no es necesario responder. <br>
+            © 2026 DevCursos - Plataforma de Aprendizaje.
+        </div>
+    </div>
+</body>
+</html>
