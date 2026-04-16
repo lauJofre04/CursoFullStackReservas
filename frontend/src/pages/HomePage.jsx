@@ -7,6 +7,7 @@ export const HomePage = () => {
   const [cursos, setCursos] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(false);
+  const { usuario } = useAuth(); // Traemos el usuario del context para mostrar info personalizada
 
   // El useEffect se ejecuta una sola vez cuando el componente se monta en pantalla
   useEffect(() => {
@@ -47,7 +48,7 @@ export const HomePage = () => {
               
               {/* Imagen del curso */}
               <img 
-                src={curso.imagen} 
+                src={curso.imagen?.replace('http://', 'https://') } 
                 alt={curso.titulo} 
                 className="w-full h-48 object-cover"
               />

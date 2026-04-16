@@ -10,6 +10,7 @@ export const Navbar = () => {
   const [menuAbierto, setMenuAbierto] = useState(false);
   const menuRef = useRef(null);
   const navigate = useNavigate();
+  const {usuario} = useAuth(); // Traemos el usuario del context para mostrar info personalizada
 
   useEffect(() => {
     const handleClickFuera = (event) => {
