@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import clienteAxios from '../api/axiosConfig';
+import { useAuth } from '../context/AuthContext'; // Para mostrar info personalizada del usuario
+
 
 export const MisCursosPage = () => {
   const [misCursos, setMisCursos] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(false);
+  const { usuario } = useAuth(); // Traemos el usuario del context
   const navigate = useNavigate();
 
   useEffect(() => {
