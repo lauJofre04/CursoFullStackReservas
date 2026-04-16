@@ -86,11 +86,11 @@ public class MercadoPagoService {
         items.add(itemRequest);
 
         // 2. AÑADIMOS AL PAGADOR EXPLÍCITO (Evita bloqueos antifraude)
-        com.mercadopago.client.preference.PreferencePayerRequest payer = 
+        /*com.mercadopago.client.preference.PreferencePayerRequest payer = 
             com.mercadopago.client.preference.PreferencePayerRequest.builder()
                 .email(usuario.getEmail())
                 .name(usuario.getNombre())
-                .build();
+                .build();*/
 
         // 3. URLs
         String renderUrl = "https://cursofullstackreservas.onrender.com";
@@ -104,7 +104,7 @@ public class MercadoPagoService {
 
         PreferenceRequest preferenceRequest = PreferenceRequest.builder()
                 .items(items)
-                .payer(payer) // 👈 INYECTAMOS AL PAGADOR
+                //.payer(payer) // 👈 INYECTAMOS AL PAGADOR
                 .backUrls(backUrls)
                 .autoReturn("approved")
                 .notificationUrl(renderUrl + "/api/webhooks/mercadopago") 
