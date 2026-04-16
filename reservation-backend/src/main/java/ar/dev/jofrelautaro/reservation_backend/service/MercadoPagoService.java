@@ -72,6 +72,7 @@ public class MercadoPagoService {
                 .monto(BigDecimal.valueOf(curso.getPrecio()))
                 .estado("INICIADO")
                 .descripcion("Pago de curso: " + curso.getTitulo())
+                .mercadoPagoPreferenceId("Generando Id...")
                 .build();
         
         pagoProvisorio = pagoRepository.save(pagoProvisorio);

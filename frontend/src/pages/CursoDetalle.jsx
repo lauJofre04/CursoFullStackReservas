@@ -126,7 +126,7 @@ export const CursoDetallePage = () => {
         {/* Mitad Izquierda: Imagen */}
         <div className="md:w-1/2">
           <img 
-            src={curso.imagen} 
+            src={curso.imagen?.replace('http://', 'https://')} 
             alt={curso.titulo} 
             className="w-full h-full object-cover min-h-[300px]"
           />
