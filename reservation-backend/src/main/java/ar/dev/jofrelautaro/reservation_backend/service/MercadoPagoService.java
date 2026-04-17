@@ -51,7 +51,7 @@ public class MercadoPagoService {
      * Crea una preferencia de pago de Mercado Pago para Checkout Pro
      * Guarda un registro inicial en la BD para vincularlo mediante external_reference
      */
-    public Map<String, Object> crearPreferenciaCheckoutPro(Long cursoId) throws Exception {
+    /*public Map<String, Object> crearPreferenciaCheckoutPro(Long cursoId) throws Exception {
         System.out.println("🚀 Iniciando creación de preferencia para Checkout Pro - Curso: " + cursoId);
         
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -86,11 +86,11 @@ public class MercadoPagoService {
         items.add(itemRequest);
 
         // 2. AÑADIMOS AL PAGADOR EXPLÍCITO (Evita bloqueos antifraude)
-        /*com.mercadopago.client.preference.PreferencePayerRequest payer = 
+        com.mercadopago.client.preference.PreferencePayerRequest payer = 
             com.mercadopago.client.preference.PreferencePayerRequest.builder()
                 .email(usuario.getEmail())
                 .name(usuario.getNombre())
-                .build();*/
+                .build();
 
         // 3. URLs
         String renderUrl = "https://cursofullstackreservas.onrender.com";
@@ -136,6 +136,69 @@ public class MercadoPagoService {
             System.err.println("❌ ERROR API DE MERCADO PAGO:");
             System.err.println("   Status: " + apiEx.getApiResponse().getStatusCode());
             System.err.println("   Content: " + apiEx.getApiResponse().getContent());
+            throw apiEx;
+        }
+    }*/
+   public Map<String, Object> crearPreferenciaCheckoutPro(Long cursoId) throws Exception {
+        System.out.println("🚀 Iniciando PRUEBA DE AISLAMIENTO - Curso: " + cursoId);
+        
+        // 1. OBTENEMOS EL CURSO Y USUARIO (Solo para guardar en nuestra BD)
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuario no autenticado"));
+        Curso curso = cursoRepository.findById(cursoId)
+                .orElseThrow(() -> new RuntimeException("Curso no encontrado"));
+
+        // 2. CREAMOS EL PAGO PROVISORIO
+        Pago pagoProvisorio = Pago.builder()
+                .usuario(usuario)
+                .curso(curso)
+                .monto(BigDecimal.valueOf(curso.getPrecio()))
+                .estado("INICIADO")
+                .descripcion("Pago de curso: " + curso.getTitulo())
+                .mercadoPagoPreferenceId("TMP-" + java.util.UUID.randomUUID().toString())
+                .build();
+        pagoProvisorio = pagoRepository.save(pagoProvisorio);
+
+        // 3. ÍTEM HARDCODEADO Y SEGURO (Sin caracteres raros)
+        PreferenceItemRequest itemRequest = PreferenceItemRequest.builder()
+                .title("Curso de Programacion") // 👈 Texto genérico a propósito
+                .quantity(1)
+                .currencyId("ARS")
+                .unitPrice(new BigDecimal("150.00")) // 👈 Precio bajo a propósito para que el antifraude no salte
+                .build();
+
+        List<PreferenceItemRequest> items = new ArrayList<>();
+        items.add(itemRequest);
+
+        // 4. PREFERENCIA "DESNUDA"
+        // 🚨 NO agregamos backUrls, notificationUrl, ni externalReference 🚨
+        PreferenceRequest preferenceRequest = PreferenceRequest.builder()
+                .items(items)
+                .build();
+
+        // 5. RADAR DE TOKEN (CRÍTICO para ver si Render actualizó la variable)
+        String tokenActual = mercadoPagoProperties.getAccessToken();
+        System.out.println("🔑 TOKEN EN USO (Primeros 10 chars): " + 
+            (tokenActual != null && tokenActual.length() > 10 ? tokenActual.substring(0, 10) + "..." : "VACÍO/CORRUPTO"));
+
+        try {
+            MercadoPagoConfig.setAccessToken(tokenActual);
+            PreferenceClient client = new PreferenceClient();
+            Preference preference = client.create(preferenceRequest);
+            
+            System.out.println("✅ ¡EL POLICY AGENT NOS DEJÓ PASAR! ID: " + preference.getId());
+            
+            pagoProvisorio.setMercadoPagoPreferenceId(preference.getId());
+            pagoRepository.save(pagoProvisorio);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("id", preference.getId());
+            response.put("init_point", preference.getInitPoint());
+            return response;
+            
+        } catch (com.mercadopago.exceptions.MPApiException apiEx) {
+            System.err.println("❌ ERROR API MP: " + apiEx.getApiResponse().getContent());
             throw apiEx;
         }
     }
