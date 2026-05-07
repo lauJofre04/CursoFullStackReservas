@@ -131,7 +131,7 @@ public class CursoService {
     @Cacheable(value = "lista_cursos")
     public List<CursoResponseDTO> obtenerCursosActivos() {
         // Tu lógica actual para buscar en BD...
-        return cursoRepository.findByEstado("ACTIVO")
+        return cursoRepository.findByActivoTrue()
             .stream()
             .map(this::convertirADTO)
             .collect(Collectors.toList());
@@ -253,7 +253,7 @@ public class CursoService {
                 .precio(curso.getPrecio())
                 .imagen(curso.getImagen())
                 .activo(curso.getActivo()) // Agregamos el campo activo al DTO  
-                
+
                 // ... (mapeá los campos que tengas en tu DTO)
                 .build();
     }
