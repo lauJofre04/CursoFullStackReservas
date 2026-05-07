@@ -6,6 +6,7 @@ import ar.dev.jofrelautaro.reservation_backend.service.ModuloService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -41,6 +42,7 @@ public class ModuloController {
      * Crear un nuevo módulo en un curso
      */
     @PostMapping("/curso/{cursoId}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('PROFESOR')")
     public ResponseEntity<?> crearModulo(@PathVariable Long cursoId, @RequestBody CreateModuloRequest request) {
         try {
             System.out.println("➕ POST /api/modulos/curso/" + cursoId);

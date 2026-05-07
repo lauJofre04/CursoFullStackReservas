@@ -40,6 +40,7 @@ public class LeccionService {
     /**
      * Crear una nueva lección en un módulo
      */
+    @Transactional
     public LeccionDTO crearLeccion(Long moduloId, CreateLeccionRequest request) {
         System.out.println("➕ Creando lección en módulo: " + moduloId);
         

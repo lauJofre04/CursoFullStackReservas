@@ -22,4 +22,6 @@ public interface CursoRepository extends JpaRepository<Curso, Long> {
     Optional<Curso> findByIdAndActivoTrue(Long id);
 
     List<Curso> findByProfesoresAndActivoTrue(Usuario profesor);
+
+    List<Curso> findByEstado(String estado);
 }

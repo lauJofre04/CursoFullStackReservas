@@ -529,7 +529,8 @@ const ContenidoLeccion = ({ leccionId, recursoActual, setRecursoActual }) => {
       {/* ÁREA DEL RECURSO (Ocupa todo el ancho disponible) */}
       <div className="mb-8">
         {recursoActual ? (
-          <VisualizadorRecurso recurso={recursoActual} />
+          // 👇 ACÁ LE PASAMOS EL leccionId
+          <VisualizadorRecurso recurso={recursoActual} leccionId={leccionId} /> 
         ) : (
           <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl h-48 flex items-center justify-center">
             <p className="text-gray-500 font-medium">Esta lección aún no tiene recursos adjuntos.</p>
@@ -544,12 +545,18 @@ const ContenidoLeccion = ({ leccionId, recursoActual, setRecursoActual }) => {
           <p className="text-gray-600 leading-relaxed whitespace-pre-wrap">{leccion.descripcion}</p>
         </div>
       )}
+
+      <div className="mt-8">
+         <ForoLeccion leccionId={leccionId} />
+      </div>
     </div>
+    
+    
   );
 };
 
-// Componente para visualizar el recurso rediseñado
-const VisualizadorRecurso = ({ recurso }) => {
+// 👇 Agregamos leccionId a los props
+const VisualizadorRecurso = ({ recurso, leccionId }) => { 
   const extraerVideoId = (url) => {
     const youtubeMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})/);
     if (youtubeMatch) return youtubeMatch[1];
@@ -561,7 +568,9 @@ const VisualizadorRecurso = ({ recurso }) => {
   // --- VISTA VIDEO (Grande y central) ---
   if (recurso.tipo === 'VIDEO') {
     const videoId = extraerVideoId(recurso.urlRecurso);
+    
     if (videoId && recurso.urlRecurso.includes('youtube')) {
+      // Si es YouTube, lo dejamos como estaba (iframe)
       return (
         <div className="w-full aspect-video rounded-2xl overflow-hidden shadow-lg bg-black border border-gray-200">
           <iframe
@@ -572,17 +581,18 @@ const VisualizadorRecurso = ({ recurso }) => {
         </div>
       );
     } else {
+      // 🚀 ACÁ ENTRA LA MAGIA SERVERLESS:
+      // Si no es YouTube (es nuestro video en Cloudinary), usamos nuestro Reproductor Inteligente
       return (
-        <div className="w-full aspect-video rounded-2xl overflow-hidden shadow-lg bg-black border border-gray-200">
-          <video width="100%" height="100%" controls src={recurso.urlRecurso} className="w-full h-full">
-            Tu navegador no soporta video
-          </video>
-        </div>
+        <ReproductorLeccion 
+          leccionId={leccionId} 
+          urlVideo={recurso.urlRecurso} 
+        />
       );
     }
   }
 
-  // --- VISTA LINK, PDF o DOCUMENTO (Tarjetas horizontales) ---
+  // --- VISTA LINK, PDF o DOCUMENTO (Queda exactamente igual) ---
   const esLink = recurso.tipo === 'LINK';
   const esPdf = recurso.tipo === 'PDF';
   

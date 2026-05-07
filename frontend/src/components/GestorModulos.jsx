@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import clienteAxios from '../api/axiosConfig';
+import axios from 'axios';
 import { ModalCrearTarea } from './ModalCrearTarea'; // 👈 1. IMPORTANTE: Ajustá la ruta si es necesario
 
 export const GestorModulos = ({ cursoId, cursoTitulo }) => {
@@ -483,17 +484,24 @@ const GestorLecciones = ({ moduloId, moduloTitulo }) => {
   );
 };
 
-// Componente para gestionar recursos de una lección
+// Componente para gestionar recursos de una lección (Actualizado con Cloudinary)
 const GestorRecursos = ({ leccionId, leccionTitulo }) => {
   const [recursos, setRecursos] = useState([]);
   const [mostrandoFormulario, setMostrandoFormulario] = useState(false);
+  
+  // Estados para el formulario
   const [nuevoRecurso, setNuevoRecurso] = useState({
     titulo: '',
     tipo: 'VIDEO',
-    urlRecurso: '',
+    urlRecurso: '', // Se usa solo si es tipo LINK
     descripcion: '',
     orden: 1
   });
+
+  // NUEVOS ESTADOS PARA CLOUDINARY
+  const [archivo, setArchivo] = useState(null);
+  const [subiendo, setSubiendo] = useState(false);
+  const [progreso, setProgreso] = useState(0);
 
   useEffect(() => {
     cargarRecursos();
@@ -511,19 +519,72 @@ const GestorRecursos = ({ leccionId, leccionTitulo }) => {
   const handleCrearRecurso = async (e) => {
     e.preventDefault();
 
-    if (!nuevoRecurso.titulo.trim() || !nuevoRecurso.urlRecurso.trim()) {
-      alert('El título y URL del recurso son obligatorios');
+    if (!nuevoRecurso.titulo.trim()) {
+      alert('El título del recurso es obligatorio');
       return;
     }
 
     try {
-      const response = await clienteAxios.post(`/recursos/leccion/${leccionId}`, nuevoRecurso);
+      setSubiendo(true);
+      let urlFinal = nuevoRecurso.urlRecurso;
+
+      // 🚀 LÓGICA SERVERLESS: Si no es un Link, subimos el archivo a Cloudinary
+      if (nuevoRecurso.tipo !== 'LINK') {
+        if (!archivo) {
+          alert('Por favor seleccioná un archivo para subir');
+          setSubiendo(false);
+          return;
+        }
+
+        console.log("1. Pidiendo firma al backend...");
+        const { data: firmaData } = await clienteAxios.get('/cloudinary/firma');
+
+        console.log("2. Subiendo archivo a Cloudinary...");
+        const formData = new FormData();
+        formData.append('file', archivo);
+        formData.append('api_key', firmaData.api_key);
+        formData.append('timestamp', firmaData.timestamp);
+        formData.append('signature', firmaData.signature);
+        formData.append('folder', firmaData.folder);
+
+        // Usamos la ruta "auto" para que Cloudinary acepte tanto Videos como PDFs
+        const resCloudinary = await axios.post(
+          `https://api.cloudinary.com/v1_1/${firmaData.cloud_name}/auto/upload`,
+          formData,
+          {
+            onUploadProgress: (p) => {
+              const porcentaje = Math.round((p.loaded * 100) / p.total);
+              setProgreso(porcentaje);
+            }
+          }
+        );
+
+        // Obtenemos la URL segura de Cloudinary
+        urlFinal = resCloudinary.data.secure_url;
+        console.log("3. Archivo subido con éxito:", urlFinal);
+      } else if (!urlFinal.trim()) {
+        alert('La URL del enlace es obligatoria');
+        setSubiendo(false);
+        return;
+      }
+
+      // 4. Guardamos en NUESTRO backend
+      const payload = { ...nuevoRecurso, urlRecurso: urlFinal };
+      const response = await clienteAxios.post(`/recursos/leccion/${leccionId}`, payload);
+      
       setRecursos([...recursos, response.data.recurso]);
+      
+      // Limpiamos los estados
       setNuevoRecurso({ titulo: '', tipo: 'VIDEO', urlRecurso: '', descripcion: '', orden: 1 });
+      setArchivo(null);
       setMostrandoFormulario(false);
+      setProgreso(0);
+
     } catch (err) {
       console.error('Error creando recurso:', err);
       alert('Error al crear el recurso');
+    } finally {
+      setSubiendo(false);
     }
   };
 
@@ -553,50 +614,89 @@ const GestorRecursos = ({ leccionId, leccionTitulo }) => {
       )}
 
       {mostrandoFormulario && (
-        <form onSubmit={handleCrearRecurso} className="mb-2 p-2 bg-white rounded border border-purple-200 text-sm">
+        <form onSubmit={handleCrearRecurso} className="mb-2 p-3 bg-white rounded border border-purple-200 text-sm shadow-sm">
           <input
             type="text"
-            placeholder="Título del recurso"
+            placeholder="Título del recurso (Ej: Video Clase 1)"
             value={nuevoRecurso.titulo}
             onChange={(e) => setNuevoRecurso({...nuevoRecurso, titulo: e.target.value})}
-            className="w-full px-2 py-1 mb-1 border rounded text-xs"
+            className="w-full px-2 py-2 mb-2 border rounded text-xs focus:outline-none focus:border-purple-500"
+            disabled={subiendo}
           />
 
           <select
             value={nuevoRecurso.tipo}
-            onChange={(e) => setNuevoRecurso({...nuevoRecurso, tipo: e.target.value})}
-            className="w-full px-2 py-1 mb-1 border rounded text-xs"
+            onChange={(e) => {
+              setNuevoRecurso({...nuevoRecurso, tipo: e.target.value, urlRecurso: ''});
+              setArchivo(null);
+            }}
+            className="w-full px-2 py-2 mb-2 border rounded text-xs bg-gray-50 focus:outline-none"
+            disabled={subiendo}
           >
-            <option value="VIDEO">🎥 Video</option>
-            <option value="PDF">📄 PDF</option>
-            <option value="LINK">🔗 Link</option>
-            <option value="DOCUMENTO">📋 Documento</option>
+            <option value="VIDEO">🎥 Subir Video</option>
+            <option value="PDF">📄 Subir PDF</option>
+            <option value="DOCUMENTO">📋 Subir Archivo (Word/Excel)</option>
+            <option value="LINK">🔗 Pegar Link Externo</option>
           </select>
 
-          <input
-            type="text"
-            placeholder="URL del recurso"
-            value={nuevoRecurso.urlRecurso}
-            onChange={(e) => setNuevoRecurso({...nuevoRecurso, urlRecurso: e.target.value})}
-            className="w-full px-2 py-1 mb-1 border rounded text-xs"
-          />
+          {/* RENDER CONDICIONAL: Archivo físico vs Link de texto */}
+          {nuevoRecurso.tipo === 'LINK' ? (
+            <input
+              type="url"
+              placeholder="https://ejemplo.com"
+              value={nuevoRecurso.urlRecurso}
+              onChange={(e) => setNuevoRecurso({...nuevoRecurso, urlRecurso: e.target.value})}
+              className="w-full px-2 py-2 mb-2 border rounded text-xs focus:outline-none focus:border-purple-500"
+              disabled={subiendo}
+            />
+          ) : (
+            <div className="mb-2">
+              <input
+                type="file"
+                accept={nuevoRecurso.tipo === 'VIDEO' ? 'video/*' : nuevoRecurso.tipo === 'PDF' ? '.pdf' : '*/*'}
+                onChange={(e) => setArchivo(e.target.files[0])}
+                className="w-full text-xs text-gray-500 file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
+                disabled={subiendo}
+              />
+            </div>
+          )}
 
           <textarea
-            placeholder="Descripción (opcional)"
+            placeholder="Descripción corta (opcional)"
             value={nuevoRecurso.descripcion}
             onChange={(e) => setNuevoRecurso({...nuevoRecurso, descripcion: e.target.value})}
-            rows="1"
-            className="w-full px-2 py-1 mb-1 border rounded text-xs"
+            rows="2"
+            className="w-full px-2 py-2 mb-2 border rounded text-xs focus:outline-none focus:border-purple-500"
+            disabled={subiendo}
           />
 
-          <div className="flex gap-1">
-            <button type="submit" className="px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700">
-              Guardar
+          {/* BARRITA DE PROGRESO */}
+          {subiendo && nuevoRecurso.tipo !== 'LINK' && (
+            <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
+              <div 
+                className="bg-purple-600 h-2 rounded-full transition-all duration-300" 
+                style={{ width: `${progreso}%` }}
+              ></div>
+              <p className="text-[10px] text-gray-500 text-right mt-1">Subiendo... {progreso}%</p>
+            </div>
+          )}
+
+          <div className="flex gap-2 mt-1">
+            <button 
+              type="submit" 
+              disabled={subiendo}
+              className="px-3 py-1.5 bg-green-600 text-white rounded text-xs font-bold hover:bg-green-700 disabled:opacity-50"
+            >
+              {subiendo ? 'Procesando...' : 'Guardar Recurso'}
             </button>
             <button
               type="button"
-              onClick={() => setMostrandoFormulario(false)}
-              className="px-2 py-1 bg-gray-400 text-white rounded text-xs"
+              onClick={() => {
+                setMostrandoFormulario(false);
+                setArchivo(null);
+              }}
+              disabled={subiendo}
+              className="px-3 py-1.5 bg-gray-400 text-white rounded text-xs font-bold hover:bg-gray-500 disabled:opacity-50"
             >
               Cancelar
             </button>
@@ -604,24 +704,31 @@ const GestorRecursos = ({ leccionId, leccionTitulo }) => {
         </form>
       )}
 
+      {/* RENDERIZADO DE LA LISTA DE RECURSOS (Queda exactamente igual) */}
       <div className="space-y-1">
         {recursos.map((recurso) => (
-          <div key={recurso.id} className="p-1 bg-white rounded text-xs flex justify-between items-start">
-            <div>
+          <div key={recurso.id} className="p-2 bg-white rounded text-xs flex justify-between items-center shadow-sm">
+            <div className="flex-1">
               <p className="font-semibold text-gray-800">
-                {recurso.tipo === 'VIDEO' && '🎥'}
-                {recurso.tipo === 'PDF' && '📄'}
-                {recurso.tipo === 'LINK' && '🔗'}
-                {recurso.tipo === 'DOCUMENTO' && '📋'}
-                {' '}{recurso.titulo}
+                {recurso.tipo === 'VIDEO' && '🎥 '}
+                {recurso.tipo === 'PDF' && '📄 '}
+                {recurso.tipo === 'LINK' && '🔗 '}
+                {recurso.tipo === 'DOCUMENTO' && '📋 '}
+                {recurso.titulo}
               </p>
-              <a href={recurso.urlRecurso} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs">
-                Abrir recurso →
+              <a 
+                href={recurso.urlRecurso} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-blue-600 hover:text-blue-800 hover:underline text-xs"
+              >
+                Ver material →
               </a>
             </div>
             <button
               onClick={() => handleEliminarRecurso(recurso.id)}
-              className="text-red-600 hover:text-red-800 font-bold"
+              className="text-red-500 hover:text-red-700 font-bold ml-4 p-1"
+              title="Eliminar recurso"
             >
               🗑️
             </button>

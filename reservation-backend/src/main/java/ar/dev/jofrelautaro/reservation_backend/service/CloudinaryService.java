@@ -59,4 +59,28 @@ public class CloudinaryService {
             throw new RuntimeException("Error al subir bytes a Cloudinary: " + e.getMessage());
         }
     }
+
+    public Map<String, Object> generarFirmaSubida() {
+        // 1. Timestamp actual en segundos
+        long timestamp = System.currentTimeMillis() / 1000L;
+        
+        // 2. Parámetros estrictos que autorizamos (Carpeta destino)
+        String folderDestino = "devcursos/lecciones";
+        Map<String, Object> paramsToSign = new HashMap<>();
+        paramsToSign.put("timestamp", timestamp);
+        paramsToSign.put("folder", folderDestino);
+
+        // 3. Firmamos criptográficamente usando el API Secret oculto en tu backend
+        String signature = cloudinary.apiSignRequest(paramsToSign, cloudinary.config.apiSecret);
+
+        // 4. Empaquetamos la respuesta para React
+        Map<String, Object> response = new HashMap<>();
+        response.put("signature", signature);
+        response.put("timestamp", timestamp);
+        response.put("folder", folderDestino);
+        response.put("api_key", cloudinary.config.apiKey);
+        response.put("cloud_name", cloudinary.config.cloudName);
+        
+        return response;
+    }
 }

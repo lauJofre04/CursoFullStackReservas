@@ -7,9 +7,13 @@ import ar.dev.jofrelautaro.reservation_backend.model.entity.Curso;
 import ar.dev.jofrelautaro.reservation_backend.model.entity.Rol;
 import ar.dev.jofrelautaro.reservation_backend.repository.CursoRepository;
 import ar.dev.jofrelautaro.reservation_backend.repository.UsuarioRepository;
+import jakarta.transaction.Transactional;
+
 import org.springframework.security.core.context.SecurityContextHolder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -45,6 +49,8 @@ public class CursoService {
         return usuario.getRol() == Rol.ADMIN || curso.getProfesores().contains(usuario);
     }
     // C - Crear (método existente)
+    @Transactional
+    @CacheEvict(value = "lista_cursos", allEntries = true)
     public Curso crearCurso(CursoRequest request) {
         // Verificar que solo admin puede crear cursos
         String emailUsuario = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -67,6 +73,8 @@ public class CursoService {
     }
 
     // C - Crear con imagen subida a Cloudinary
+    @Transactional
+    @CacheEvict(value = "lista_cursos", allEntries = true)
     public Curso crearCursoConImagen(String titulo, String descripcion, Double precio, MultipartFile file) throws IOException {
         // Verificar que solo admin puede crear cursos
         String emailUsuario = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -117,8 +125,20 @@ public class CursoService {
                 .build()
         ).collect(Collectors.toList());
     }
+    // Cuando alguien llame a este método, Spring buscará en Redis ("lista_cursos").
+    // Si no está, va a PostgreSQL, trae los datos, se los devuelve al usuario 
+    // y GUARDA una copia en Redis para el próximo que pregunte.
+    @Cacheable(value = "lista_cursos")
+    public List<CursoResponseDTO> obtenerCursosActivos() {
+        // Tu lógica actual para buscar en BD...
+        return cursoRepository.findByEstado("ACTIVO")
+            .stream()
+            .map(this::convertirADTO)
+            .collect(Collectors.toList());
+    }
 
     // U - Actualizar
+    @CacheEvict(value = "lista_cursos", allEntries = true) // Limpia la caché de cursos activos al actualizar
     public Curso actualizarCurso(Long id, CursoRequest request) {
         Curso cursoExistente = obtenerCursoPorId(id);
         
@@ -136,6 +156,7 @@ public class CursoService {
     }
 
     // U - Actualizar con nueva imagen
+    @CacheEvict(value = "lista_cursos", allEntries = true) // Limpia la caché de cursos activos al actualizar
     public Curso actualizarCursoConImagen(Long id, String titulo, String descripcion, Double precio, MultipartFile file) throws IOException {
         Curso cursoExistente = obtenerCursoPorId(id);
         
@@ -166,6 +187,7 @@ public class CursoService {
     }
 
     // Asignar profesor a un curso (solo admin)
+    @CacheEvict(value = "lista_cursos", allEntries = true) // Limpia la caché de cursos activos al asignar profesor
     public Curso asignarProfesor(Long cursoId, Long profesorId) {
         // Verificar que solo admin puede asignar profesores
         String emailUsuario = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -221,4 +243,19 @@ public class CursoService {
         curso.setActivo(false); // ¡Acá está la magia del Soft Delete! Lo "apagamos".
         cursoRepository.save(curso);
     }
+
+    // Este método va suelto adentro de CursoService
+    private CursoResponseDTO convertirADTO(Curso curso) {
+        return CursoResponseDTO.builder()
+                .id(curso.getId())
+                .titulo(curso.getTitulo())
+                .descripcion(curso.getDescripcion())
+                .precio(curso.getPrecio())
+                .imagen(curso.getImagen())
+                .activo(curso.getActivo()) // Agregamos el campo activo al DTO  
+                
+                // ... (mapeá los campos que tengas en tu DTO)
+                .build();
+    }
+
 }

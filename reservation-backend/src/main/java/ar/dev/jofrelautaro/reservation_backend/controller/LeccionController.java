@@ -6,6 +6,7 @@ import ar.dev.jofrelautaro.reservation_backend.service.LeccionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -57,6 +58,7 @@ public class LeccionController {
      * Crear una nueva lección en un módulo
      */
     @PostMapping("/modulo/{moduloId}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('PROFESOR')")
     public ResponseEntity<?> crearLeccion(@PathVariable Long moduloId, @RequestBody CreateLeccionRequest request) {
         try {
             System.out.println("➕ POST /api/lecciones/modulo/" + moduloId);
