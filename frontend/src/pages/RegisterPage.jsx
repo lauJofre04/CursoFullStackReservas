@@ -37,10 +37,10 @@ export const RegisterPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-      <div className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md">
+    <div className="min-h-screen bg-gray-100 dark:bg-slate-950 dark:text-slate-100 flex items-center justify-center p-4 transition-colors duration-300">
+      <div className="bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-lg w-full max-w-md">
         
-        <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">
+        <h2 className="text-3xl font-bold text-center text-gray-800 dark:text-slate-100 mb-8">
           Crear Cuenta
         </h2>
 
@@ -52,7 +52,7 @@ export const RegisterPage = () => {
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nombre Completo</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Nombre Completo</label>
             <input
               type="text"
               value={nombre}
@@ -64,7 +64,7 @@ export const RegisterPage = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Correo Electrónico</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Correo Electrónico</label>
             <input
               type="email"
               value={email}
@@ -76,7 +76,7 @@ export const RegisterPage = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Contraseña</label>
             <div className="relative">
               <input
                 type={mostrarPassword ? "text" : "password"}
@@ -111,7 +111,7 @@ export const RegisterPage = () => {
             <select
               value={rol}
               onChange={(e) => setRol(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white"
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white dark:bg-slate-950"
             >
               <option value="ESTUDIANTE">Estudiante</option>
               <option value="ADMIN">Administrador</option>
@@ -126,7 +126,7 @@ export const RegisterPage = () => {
           </button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-gray-600">
+        <p className="mt-6 text-center text-sm text-gray-600 dark:text-slate-400">
           ¿Ya tienes una cuenta?{' '}
           <Link to="/login" className="text-blue-600 hover:underline font-semibold">
             Inicia sesión aquí

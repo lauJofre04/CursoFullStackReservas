@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { BotonTema } from './BotonTema';
 // Asegurate de que la ruta a tu AuthContext sea la correcta
 import { useAuth } from '../context/AuthContext'; 
 
@@ -29,14 +30,17 @@ export const Navbar = () => {
   };
 
   return (
-    <nav className="bg-white shadow px-6 py-4 flex justify-between items-center z-40 relative">
+    <nav className="bg-white dark:bg-slate-900 shadow px-6 py-4 flex justify-between items-center z-40 relative text-slate-900 dark:text-slate-100">
       <div className="font-extrabold text-2xl text-blue-600 tracking-tight">
         <Link to="/">DevCursos</Link>
       </div>
 
-      {/* Condicional: Si hay usuario logueado mostramos el perfil, si no, los botones */}
-      {usuario ? (
-        <div className="relative" ref={menuRef}>
+      <div className="flex items-center gap-4">
+        <BotonTema />
+
+        {/* Condicional: Si hay usuario logueado mostramos el perfil, si no, los botones */}
+        {usuario ? (
+          <div className="relative" ref={menuRef}>
           <button 
             onClick={() => setMenuAbierto(!menuAbierto)}
             className="flex items-center focus:outline-none transition-transform hover:scale-105"
@@ -55,22 +59,22 @@ export const Navbar = () => {
           </button>
 
           {menuAbierto && (
-            <div className="absolute right-0 mt-3 w-56 bg-white rounded-xl shadow-xl py-2 border border-gray-100 z-50">
-              <div className="px-4 py-3 border-b border-gray-100 mb-1">
-                <p className="text-xs text-gray-500 uppercase font-semibold">Sesión iniciada como</p>
-                <p className="text-sm font-bold text-gray-900 truncate mt-0.5">{usuario.nombre}</p>
+            <div className="absolute right-0 mt-3 w-56 bg-white dark:bg-slate-900 rounded-xl shadow-xl py-2 border border-gray-100 dark:border-slate-700 z-50">
+              <div className="px-4 py-3 border-b border-gray-100 dark:border-slate-700 mb-1">
+                <p className="text-xs text-gray-500 dark:text-slate-400 uppercase font-semibold">Sesión iniciada como</p>
+                <p className="text-sm font-bold text-gray-900 dark:text-slate-100 truncate mt-0.5">{usuario.nombre}</p>
               </div>
               
-              <Link to="/mis-cursos" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600" onClick={() => setMenuAbierto(false)}>
+              <Link to="/mis-cursos" className="block px-4 py-2 text-sm text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-300" onClick={() => setMenuAbierto(false)}>
                 Mis Cursos
               </Link>
-              <Link to="/perfil" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600" onClick={() => setMenuAbierto(false)}>
+              <Link to="/perfil" className="block px-4 py-2 text-sm text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-300" onClick={() => setMenuAbierto(false)}>
                 Mi Perfil
               </Link>
-              <Link to="/mi-calendario" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600" onClick={() => setMenuAbierto(false)}>
+              <Link to="/mi-calendario" className="block px-4 py-2 text-sm text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-300" onClick={() => setMenuAbierto(false)}>
                 Mi Calendario
               </Link>
-              <Link to="/chat" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600" onClick={() => setMenuAbierto(false)}>
+              <Link to="/chat" className="block px-4 py-2 text-sm text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-300" onClick={() => setMenuAbierto(false)}>
                 Chat
               </Link>
 
@@ -86,8 +90,8 @@ export const Navbar = () => {
                 </Link>
               )}
 
-              <div className="border-t border-gray-100 mt-2 mb-1"></div>
-              <button onClick={handleLogout} className="block w-full text-left px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50">
+              <div className="border-t border-gray-100 dark:border-slate-700 mt-2 mb-1"></div>
+              <button onClick={handleLogout} className="block w-full text-left px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950">
                 Cerrar Sesión
               </button>
             </div>
@@ -95,21 +99,24 @@ export const Navbar = () => {
         </div>
       ) : (
         /* Bloque para cuando el usuario NO está logueado (visitante) */
-        <div className="flex items-center space-x-4">
-          <Link 
-            to="/login" 
-            className="text-gray-600 hover:text-blue-600 font-semibold transition-colors"
-          >
-            Iniciar Sesión
-          </Link>
-          <Link 
-            to="/register" 
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-5 rounded-xl transition-colors shadow-sm"
-          >
-            Registrarse
-          </Link>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center space-x-4">
+            <Link 
+              to="/login" 
+              className="text-gray-600 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-300 font-semibold transition-colors"
+            >
+              Iniciar Sesión
+            </Link>
+            <Link 
+              to="/register" 
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-5 rounded-xl transition-colors shadow-sm"
+            >
+              Registrarse
+            </Link>
+          </div>
         </div>
       )}
+      </div>
     </nav>
   );
 };

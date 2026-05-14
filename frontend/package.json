@@ -13,6 +13,7 @@
     "@react-oauth/google": "^0.13.5",
     "@sentry/react": "^10.48.0",
     "@stomp/stompjs": "^7.3.0",
+    "@tanstack/react-query": "^5.100.10",
     "axios": "^1.13.6",
     "date-fns": "^4.1.0",
     "jwt-decode": "^4.0.0",

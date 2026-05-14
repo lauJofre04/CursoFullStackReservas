@@ -1,71 +1,53 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import clienteAxios from '../api/axiosConfig';
 import { useAuth } from '../context/AuthContext'; // Para mostrar info personalizada del usuario
 
 
 export const MisCursosPage = () => {
-  const [misCursos, setMisCursos] = useState([]);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState(false);
   const { usuario } = useAuth(); // Traemos el usuario del context
   const navigate = useNavigate();
+  const [selectedCurso, setSelectedCurso] = useState(null);
 
-  useEffect(() => {
-    const obtenerMisCursos = async () => {
-      try {
-        let url = '';
-        
-        // 🚦 LÓGICA DE RUTEO SEGÚN EL ROL
-        if (usuario?.rol === 'PROFESOR') {
-          url = '/cursos/mis-cursos-asignados';
-        } else if (usuario?.rol === 'ADMIN') {
-          url = '/cursos'; // El admin ve absolutamente todos
-        } else {
-          url = '/inscripciones/mis-cursos'; // Los alumnos ven sus compras
-        }
-
-        const response = await clienteAxios.get(url);
-        
-        // 🧹 NORMALIZACIÓN DE DATOS
-        // Como el endpoint de profesor devuelve la entidad "Curso" directa
-        // y el de alumno devuelve un DTO de "Inscripcion", emparejamos los nombres:
-        const cursosNormalizados = response.data.map(item => ({
-          cursoId: item.cursoId || item.id, // Si no viene cursoId, usamos el id directo
-          titulo: item.titulo,
-          imagen: item.imagen || item.imagenUrl || 'https://via.placeholder.com/400x200?text=Curso', // Placeholder si no hay imagen
-          estado: item.estado || (item.activo ? 'ACTIVA' : 'INACTIVA'),
-          fechaInscripcion: item.fechaInscripcion || new Date().toISOString() // Los profes no tienen fecha de inscripción real
-        }));
-
-        setMisCursos(cursosNormalizados);
-      } catch (err) {
-        console.error("Error al traer los cursos del usuario:", err);
-        setError(true);
-      } finally {
-        setCargando(false);
+  const { data: misCursos = [], isLoading: cargando, error } = useQuery({
+    queryKey: ['misCursos', usuario?.rol, usuario?.id],
+    queryFn: async () => {
+      let url = '';
+      if (usuario?.rol === 'PROFESOR') {
+        url = '/cursos/mis-cursos-asignados';
+      } else if (usuario?.rol === 'ADMIN') {
+        url = '/cursos';
+      } else {
+        url = '/inscripciones/mis-cursos';
       }
-    };
 
-    // Solo ejecutamos si ya cargó el usuario del context
-    if (usuario) {
-      obtenerMisCursos();
-    }
-  }, [usuario]); // 👈 Dependencia del useEffect
+      const response = await clienteAxios.get(url);
+      return (Array.isArray(response.data) ? response.data : []).map((item) => ({
+        cursoId: item.cursoId || item.id,
+        titulo: item.titulo,
+        imagen: item.imagen || item.imagenUrl || 'https://via.placeholder.com/400x200?text=Curso',
+        estado: item.estado || (item.activo ? 'ACTIVA' : 'INACTIVA'),
+        fechaInscripcion: item.fechaInscripcion || new Date().toISOString(),
+      }));
+    },
+    enabled: !!usuario,
+    staleTime: 1000 * 60 * 2,
+  });
 
   if (cargando) return <div className="text-center mt-20 text-xl font-bold text-gray-600">Cargando tu aprendizaje... ⏳</div>;
   if (error) return <div className="text-center mt-20 text-xl font-bold text-red-600">Hubo un error al cargar tus cursos ❌</div>;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-950 dark:text-slate-100 p-8 transition-colors duration-300">
       <div className="max-w-7xl mx-auto">
         
-        <h1 className="text-4xl font-extrabold text-gray-900 mb-2">Mis Cursos</h1>
-        <p className="text-gray-600 mb-10 text-lg">Acá están todos los cursos a los que estás inscripto.</p>
+        <h1 className="text-4xl font-extrabold text-gray-900 dark:text-slate-100 mb-2">Mis Cursos</h1>
+        <p className="text-gray-600 dark:text-slate-300 mb-10 text-lg">Acá están todos los cursos a los que estás inscripto.</p>
 
         {misCursos.length === 0 ? (
-          <div className="bg-white rounded-2xl shadow-sm p-10 text-center">
-            <h2 className="text-2xl font-bold text-gray-700 mb-4">Todavía no tenés cursos 😢</h2>
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-10 text-center">
+            <h2 className="text-2xl font-bold text-gray-700 dark:text-slate-100 mb-4">Todavía no tenés cursos 😢</h2>
             <Link to="/home" className="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors inline-block">
               Explorar la vidriera
             </Link>
@@ -73,7 +55,7 @@ export const MisCursosPage = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {misCursos.map((curso) => (
-              <div key={curso.cursoId} className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 relative">
+              <div key={curso.cursoId} className="bg-white dark:bg-slate-800 rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 relative">
                 
                 {/* Etiqueta de Estado */}
                 <div className={`absolute top-4 right-4 px-3 py-1 rounded-full text-sm font-bold shadow-sm z-10 ${

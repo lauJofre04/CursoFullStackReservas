@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import clienteAxios from '../api/axiosConfig';
 import { useNavigate } from 'react-router-dom';
 
@@ -8,43 +9,33 @@ export const CursoDetallePage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   
-  const [curso, setCurso] = useState(null);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState(false);
-  // estos dos estados para manejar el botón y el cartelito
   const [inscribiendo, setInscribiendo] = useState(false);
   const [alerta, setAlerta] = useState(null);
-
   const [procesandoPago, setProcesandoPago] = useState(false);
   const [errorPago, setErrorPago] = useState(null);
-  const [publicKey, setPublicKey] = useState(null);
 
-  useEffect(() => {
-    const obtenerDetalleCurso = async () => {
-      try {
-        // Le pegamos al endpoint GET /api/cursos/{id} que armaste hoy en el backend
-        const response = await clienteAxios.get(`/cursos/${id}`);
-        setCurso(response.data);
-        setCargando(false);
-      } catch (err) {
-        console.error("Error al traer el detalle del curso:", err);
-        setError(true);
-        setCargando(false);
-      }
-    };
+  const {
+    data: curso,
+    isLoading: cargando,
+    error,
+  } = useQuery({
+    queryKey: ['cursoDetalle', id],
+    queryFn: async () => {
+      const response = await clienteAxios.get(`/cursos/${id}`);
+      return response.data;
+    },
+    enabled: !!id,
+    staleTime: 1000 * 60 * 5,
+  });
 
-    const obtenerPublicKey = async () => {
-      try {
-        const response = await clienteAxios.get('/pagos/public-key');
-        setPublicKey(response.data.publicKey);
-      } catch (err) {
-        console.error("Error al obtener clave pública:", err);
-      }
-    };
-
-    obtenerDetalleCurso();
-    obtenerPublicKey();
-  }, [id]); // El useEffect se vuelve a ejecutar si cambia el ID
+  const { data: publicKey } = useQuery({
+    queryKey: ['publicKeyMercadoPago'],
+    queryFn: async () => {
+      const response = await clienteAxios.get('/pagos/public-key');
+      return response.data.publicKey;
+    },
+    staleTime: 1000 * 60 * 10,
+  });
 
 
   const handleInscripcion = async () => {
@@ -120,8 +111,8 @@ export const CursoDetallePage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-5xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden flex flex-col md:flex-row">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-950 dark:text-slate-100 py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-300">
+      <div className="max-w-5xl mx-auto bg-white dark:bg-slate-900 rounded-3xl shadow-xl overflow-hidden flex flex-col md:flex-row">
         
         {/* Mitad Izquierda: Imagen */}
         <div className="md:w-1/2">
@@ -138,17 +129,17 @@ export const CursoDetallePage = () => {
             <div className="uppercase tracking-wide text-sm text-blue-600 font-bold mb-1">
               Desarrollo Profesional
             </div>
-            <h1 className="text-3xl font-extrabold text-gray-900 mb-4">
+            <h1 className="text-3xl font-extrabold text-gray-900 dark:text-slate-100 mb-4">
               {curso.titulo}
             </h1>
-            <p className="text-gray-600 text-lg leading-relaxed mb-6 whitespace-pre-line">
+            <p className="text-gray-600 dark:text-slate-300 text-lg leading-relaxed mb-6 whitespace-pre-line">
               {curso.descripcion}
             </p>
           </div>
 
           {/* Sección de Precio y Botones */}
           <div className="mt-8 border-t pt-6 flex flex-col items-center">
-            <p className="text-3xl font-bold text-gray-800 mb-4">
+            <p className="text-3xl font-bold text-gray-800 dark:text-slate-100 mb-4">
               ${curso?.precio?.toLocaleString('es-AR')} ARS
             </p>
 
@@ -196,7 +187,7 @@ export const CursoDetallePage = () => {
               Pago 100% seguro procesado por Mercado Pago.
             </p>
 
-            <Link to="/home" className="mt-6 text-center text-gray-500 font-semibold py-3 hover:bg-gray-50 rounded-xl transition-colors w-full">
+            <Link to="/home" className="mt-6 text-center text-gray-500 dark:text-slate-400 font-semibold py-3 hover:bg-gray-50 dark:hover:bg-slate-800 rounded-xl transition-colors w-full">
               Volver a la vidriera
             </Link>
           </div>

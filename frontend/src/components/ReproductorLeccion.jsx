@@ -1,42 +1,52 @@
 import { useState, useEffect, useRef } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import clienteAxios from '../api/axiosConfig';
 
-export const ReproductorLeccion = ({ leccionId, urlVideo }) => {
+export const ReproductorLeccion = ({ leccionId, urlVideo, seekTime, onTimeChange }) => {
   const videoRef = useRef(null);
   const ultimoPingRef = useRef(0); // Guarda el último segundo que enviamos al backend
 
-  const [cargando, setCargando] = useState(true);
   const [completado, setCompletado] = useState(false);
 
-  // 1. Al cargar el componente, le preguntamos al backend dónde nos quedamos
-  useEffect(() => {
-    cargarProgresoInicial();
-  }, [leccionId]);
-
-  const cargarProgresoInicial = async () => {
-    try {
+  const { data: progresoData, isLoading: cargando, error: progresoError } = useQuery({
+    queryKey: ['progresoLeccion', leccionId],
+    queryFn: async () => {
       const response = await clienteAxios.get(`/progreso/leccion/${leccionId}`);
-      const { segundos, completado: yaCompletado } = response.data;
-      
-      // Magia pura: Movemos la aguja del video al minuto guardado
-      if (videoRef.current && segundos > 0) {
-        videoRef.current.currentTime = segundos; 
-      }
-      
-      setCompletado(yaCompletado);
-    } catch (error) {
-      console.error("Error al cargar progreso inicial:", error);
-    } finally {
-      setCargando(false);
+      return response.data;
+    },
+    enabled: !!leccionId,
+    staleTime: 1000 * 60 * 2,
+  });
+
+  useEffect(() => {
+    if (!progresoData || !videoRef.current) return;
+
+    const { segundos, completado: yaCompletado } = progresoData;
+    if (segundos > 0) {
+      videoRef.current.currentTime = segundos;
     }
-  };
+    setCompletado(yaCompletado);
+  }, [progresoData]);
+
+  useEffect(() => {
+    if (progresoError) {
+      console.error('Error al cargar progreso inicial:', progresoError);
+    }
+  }, [progresoError]);
+
+  useEffect(() => {
+    if (seekTime != null && videoRef.current) {
+      videoRef.current.currentTime = seekTime;
+    }
+  }, [seekTime]);
 
   // 2. Esta función se ejecuta MUCHAS veces por segundo mientras el video corre
   const handleTimeUpdate = () => {
     if (!videoRef.current) return;
     
     const tiempoActual = Math.floor(videoRef.current.currentTime);
-    
+    onTimeChange?.(tiempoActual);
+
     // Throttling: Solo mandamos el ping si pasaron 5 segundos desde el último
     if (tiempoActual - ultimoPingRef.current >= 5) {
       ultimoPingRef.current = tiempoActual;

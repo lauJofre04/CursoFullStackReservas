@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
+import { useMutation } from '@tanstack/react-query';
 import clienteAxios from '../api/axiosConfig';
 
 export const CambiarPasswordPage = () => {
@@ -9,50 +10,48 @@ export const CambiarPasswordPage = () => {
 
   const [nuevaPassword, setNuevaPassword] = useState('');
   const [mensaje, setMensaje] = useState(null);
-  const [cargando, setCargando] = useState(false);
   const [mostrarPassword, setMostrarPassword] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setCargando(true);
-    setMensaje(null);
-
-    try {
-      const response = await clienteAxios.post('/auth/cambiar-password', { 
-        token, 
-        nuevaPassword 
-      });
-      
-      setMensaje({ tipo: 'exito', texto: response.data.mensaje });
+  const cambiarPasswordMutation = useMutation({
+    mutationFn: async (datos) => {
+      const response = await clienteAxios.post('/auth/cambiar-password', datos);
+      return response.data.mensaje;
+    },
+    onSuccess: (mensajeExito) => {
+      setMensaje({ tipo: 'exito', texto: mensajeExito });
       
       // Magia: Lo mandamos al login a los 3 segundos
       setTimeout(() => {
         navigate('/login');
       }, 3000);
-
-    } catch (error) {
+    },
+    onError: (error) => {
       const msj = error.response?.data?.mensaje || 'Error al cambiar la contraseña. El link puede estar vencido.';
       setMensaje({ tipo: 'error', texto: msj });
-    } finally {
-      setCargando(false);
     }
+  });
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setMensaje(null);
+    cambiarPasswordMutation.mutate({ token, nuevaPassword });
   };
 
   // Si alguien entra a esta página sin token en la URL, le mostramos un error feo
   if (!token) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-950 transition-colors duration-300">
         <h2 className="text-2xl font-bold text-red-600">Acceso denegado. Falta el token de seguridad.</h2>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4">
-      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-950 py-12 px-4 transition-colors duration-300">
+      <div className="max-w-md w-full space-y-8 bg-white dark:bg-slate-900 dark:border-slate-700 p-8 rounded-2xl shadow-lg border border-gray-100">
         <div className="text-center">
-          <h2 className="text-3xl font-extrabold text-gray-900">Nueva Contraseña</h2>
-          <p className="mt-2 text-sm text-gray-600">Escribí tu nueva contraseña para ingresar.</p>
+          <h2 className="text-3xl font-extrabold text-gray-900 dark:text-slate-100">Nueva Contraseña</h2>
+          <p className="mt-2 text-sm text-gray-600 dark:text-slate-300">Escribí tu nueva contraseña para ingresar.</p>
         </div>
 
         {mensaje && (
@@ -69,7 +68,7 @@ export const CambiarPasswordPage = () => {
               minLength="6"
               value={nuevaPassword}
               onChange={(e) => setNuevaPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
               placeholder="Nueva contraseña (mínimo 6 caracteres)"
             />
             <button
@@ -93,12 +92,12 @@ export const CambiarPasswordPage = () => {
 
           <button
             type="submit"
-            disabled={cargando || mensaje?.tipo === 'exito'}
+            disabled={cambiarPasswordMutation.isPending || mensaje?.tipo === 'exito'}
             className={`w-full py-3 px-4 rounded-xl text-white font-bold transition-colors ${
-              cargando ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700'
+              cambiarPasswordMutation.isPending ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700'
             }`}
           >
-            {cargando ? 'Guardando...' : 'Guardar nueva contraseña'}
+            {cambiarPasswordMutation.isPending ? 'Guardando...' : 'Guardar nueva contraseña'}
           </button>
         </form>
         

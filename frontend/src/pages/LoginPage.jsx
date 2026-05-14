@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useMutation } from '@tanstack/react-query';
 import clienteAxios from '../api/axiosConfig'; 
 import { useAuth } from '../context/AuthContext'; 
 import { GoogleLogin } from '@react-oauth/google';// 1. Importamos el contexto
@@ -12,38 +13,35 @@ export const LoginPage = () => {
   const navigate = useNavigate(); 
   
   // 2. Extraemos la función login de nuestro estado global
-  const { login } = useAuth(); 
+  const { login } = useAuth();
+
+  const loginMutation = useMutation({
+    mutationFn: async (credenciales) => {
+      const response = await clienteAxios.post('/auth/login', credenciales);
+      return response.data.token;
+    },
+    onSuccess: (token) => {
+      login(token);
+      alert("¡Login exitoso! Ya tenés tu pase VIP.");
+      navigate('/');
+    },
+    onError: (error) => {
+      console.error(error);
+      setError('Credenciales incorrectas. Por favor, intenta de nuevo.');
+    }
+  });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(''); 
-
-    try {
-      const response = await clienteAxios.post('/auth/login', {
-        email,
-        password
-      });
-
-      const token = response.data.token;
-      
-      // 3. ¡LA MAGIA! Usamos la función del contexto en lugar de localStorage a mano.
-      // Esto guarda el token Y actualiza el estado global de React al instante.
-      login(token);
-
-      alert("¡Login exitoso! Ya tenés tu pase VIP.");
-      navigate('/'); 
-
-    } catch (err) {
-      console.error(err);
-      setError('Credenciales incorrectas. Por favor, intenta de nuevo.');
-    }
+    loginMutation.mutate({ email, password });
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-      <div className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md">
+    <div className="min-h-screen bg-gray-100 dark:bg-slate-950 dark:text-slate-100 flex items-center justify-center p-4 transition-colors duration-300">
+      <div className="bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-lg w-full max-w-md">
         
-        <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">
+        <h2 className="text-3xl font-bold text-center text-gray-800 dark:text-slate-100 mb-8">
           Iniciar Sesión
         </h2>
 
@@ -55,19 +53,19 @@ export const LoginPage = () => {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Correo Electrónico</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Correo Electrónico</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
               placeholder="lauti@admin.com"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Contraseña</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Contraseña</label>
             <div className="relative">
               <input
                 type={mostrarPassword ? "text" : "password"}
@@ -99,13 +97,16 @@ export const LoginPage = () => {
 
           <button
             type="submit"
-            className="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-300"
+            disabled={loginMutation.isPending}
+            className={`w-full text-white font-bold py-3 px-4 rounded-lg transition-colors duration-300 ${
+              loginMutation.isPending ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+            }`}
           >
-            Ingresar
+            {loginMutation.isPending ? 'Ingresando...' : 'Ingresar'}
           </button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-gray-600">
+        <p className="mt-6 text-center text-sm text-gray-600 dark:text-slate-400">
           ¿No tienes una cuenta?{' '}
           <Link to="/register" className="text-blue-600 hover:underline font-semibold">
             Regístrate aquí

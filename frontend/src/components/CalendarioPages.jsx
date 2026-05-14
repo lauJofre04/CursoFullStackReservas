@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import format from 'date-fns/format';
 import parse from 'date-fns/parse';
@@ -40,41 +41,24 @@ const mensajesEspanol = {
 };
 
 export const CalendarioPage = () => {
-  const [eventos, setEventos] = useState([]);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState(null);
   const [tareaSeleccionada, setTareaSeleccionada] = useState(null);
-  const [modalAbierto, setModalAbierto] = useState(false);  
+  const [modalAbierto, setModalAbierto] = useState(false);
 
-  useEffect(() => {
-    cargarCalendario();
-  }, []);
-
-  const cargarCalendario = async () => {
-    try {
-      setCargando(true);
-      // Llamamos a la API que armaste recién
+  const { data: eventos = [], isLoading: cargando, error } = useQuery({
+    queryKey: ['calendarioTareas'],
+    queryFn: async () => {
       const response = await clienteAxios.get('/tareas/calendario');
-      
-      // La librería exige estrictamente que start y end sean objetos Date de JavaScript
-      const eventosFormateados = response.data.map(tarea => ({
-        id: tarea.id,
-        title: tarea.title,
-        // Convertimos el string ISO del backend a Date
-        start: new Date(tarea.start), 
-        end: new Date(tarea.end),
-        cursoTitulo: tarea.cursoTitulo
-      }));
-
-      setEventos(eventosFormateados);
-      setError(null);
-    } catch (err) {
-      console.error('Error cargando calendario:', err);
-      setError('Hubo un problema al cargar tus tareas.');
-    } finally {
-      setCargando(false);
-    }
-  };
+      return Array.isArray(response.data) ? response.data : [];
+    },
+    select: (tareas) => tareas.map((tarea) => ({
+      id: tarea.id,
+      title: tarea.title,
+      start: new Date(tarea.start),
+      end: new Date(tarea.end),
+      cursoTitulo: tarea.cursoTitulo,
+    })),
+    staleTime: 1000 * 60 * 2,
+  });
   const handleSeleccionarEvento = (evento) => {
     setTareaSeleccionada(evento);
     setModalAbierto(true);

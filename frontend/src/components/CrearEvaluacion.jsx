@@ -1,10 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import clienteAxios from '../api/axiosConfig';
 
 export const CrearEvaluacion = ({ cursoIdPreseleccionado }) => {
   // Estado para los cursos disponibles (para el <select>)
-  const [cursos, setCursos] = useState([]);
-  const [cargando, setCargando] = useState(false);
 
   // El super-estado que guarda toda la estructura del examen
   const [evaluacion, setEvaluacion] = useState({
@@ -22,18 +21,51 @@ export const CrearEvaluacion = ({ cursoIdPreseleccionado }) => {
     ]
   });
 
-  // Cargar los cursos al montar el componente
-  useEffect(() => {
-    const fetchCursos = async () => {
-      try {
-        const res = await clienteAxios.get('/cursos');
-        setCursos(res.data);
-      } catch (error) {
-        console.error("Error al cargar cursos:", error);
-      }
-    };
-    fetchCursos();
-  }, []);
+  const [mensaje, setMensaje] = useState({ tipo: '', texto: '' });
+
+  const queryClient = useQueryClient();
+
+  const { data: cursos = [] } = useQuery({
+    queryKey: ['cursosParaEvaluacion'],
+    queryFn: async () => {
+      const res = await clienteAxios.get('/cursos');
+      return Array.isArray(res.data) ? res.data : res.data?.content || [];
+    },
+    staleTime: 1000 * 60 * 2,
+  });
+
+  const crearEvaluacionMutation = useMutation({
+    mutationFn: async (datos) => {
+      const idDelCurso = cursoIdPreseleccionado || datos.cursoId;
+      
+      if (!idDelCurso) throw new Error("Selecciona un curso");
+      
+      const datosAEnviar = {
+        ...datos,
+        cursoId: idDelCurso
+      };
+
+      await clienteAxios.post('/evaluaciones/crear', datosAEnviar);
+    },
+    onSuccess: () => {
+      setMensaje({ tipo: 'exito', texto: '¡Evaluación creada con éxito!' });
+      queryClient.invalidateQueries({ queryKey: ['evaluaciones'] });
+      
+      // Resetear formulario
+      setEvaluacion({
+        titulo: '', descripcion: '', cursoId: '',
+        preguntas: [{ texto: '', opciones: [{ texto: '', esCorrecta: true }, { texto: '', esCorrecta: false }] }]
+      });
+      
+      setTimeout(() => {
+        setMensaje({ tipo: '', texto: '' });
+      }, 2000);
+    },
+    onError: (error) => {
+      console.error(error);
+      setMensaje({ tipo: 'error', texto: error.message || 'Error al crear la evaluación' });
+    }
+  });
 
   // --- MÉTODOS PARA MANEJAR EL ESTADO ANIDADO ---
 
@@ -75,32 +107,8 @@ export const CrearEvaluacion = ({ cursoIdPreseleccionado }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setCargando(true);
-    try {
-      const idDelCurso = cursoIdPreseleccionado || evaluacion.cursoId;
-      
-      if (!idDelCurso) return alert("Selecciona un curso");
-      
-      // Armamos el paquete de datos con el ID correcto asegurado
-      const datosAEnviar = {
-        ...evaluacion,
-        cursoId: idDelCurso
-      };
-
-      await clienteAxios.post('/evaluaciones/crear', datosAEnviar);
-      alert("¡Evaluación creada con éxito!");
-      
-      // Resetear formulario
-      setEvaluacion({
-        titulo: '', descripcion: '', cursoId: '',
-        preguntas: [{ texto: '', opciones: [{ texto: '', esCorrecta: true }, { texto: '', esCorrecta: false }] }]
-      });
-    } catch (error) {
-      console.error(error);
-      alert("Error al crear la evaluación");
-    } finally {
-      setCargando(false);
-    }
+    setMensaje({ tipo: '', texto: '' });
+    crearEvaluacionMutation.mutate(evaluacion);
   };
 
   return (
@@ -111,6 +119,13 @@ export const CrearEvaluacion = ({ cursoIdPreseleccionado }) => {
 
       <form onSubmit={handleSubmit} className="space-y-8">
         
+        {/* --- MENSAJE DE FEEDBACK --- */}
+        {mensaje.texto && (
+          <div className={`p-4 rounded-lg text-sm font-semibold text-center ${mensaje.tipo === 'exito' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+            {mensaje.texto}
+          </div>
+        )}
+
         {/* --- DATOS GENERALES --- */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50 p-6 rounded-xl border">
           {!cursoIdPreseleccionado && (
@@ -242,10 +257,10 @@ export const CrearEvaluacion = ({ cursoIdPreseleccionado }) => {
 
         <button 
           type="submit" 
-          disabled={cargando}
+          disabled={crearEvaluacionMutation.isPending}
           className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl text-lg shadow-md transition-all disabled:bg-gray-400"
         >
-          {cargando ? 'Guardando...' : '💾 Guardar Evaluación Completa'}
+          {crearEvaluacionMutation.isPending ? 'Guardando...' : '💾 Guardar Evaluación Completa'}
         </button>
       </form>
     </div>

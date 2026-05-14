@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import clienteAxios from '../api/axiosConfig';
 import { useAuth } from '../context/AuthContext'; // Asegurate de que la ruta a tu AuthContext sea la correcta
 
@@ -20,34 +21,27 @@ export const PerfilUsuarioPage = () => {
   });
   const [estadoDatos, setEstadoDatos] = useState({ cargando: false, mensaje: null, tipo: '' });
 
-  // Importante: Asegurate de haber importado useEffect arriba de todo en tu archivo
-  // import { useState, useEffect } from 'react';
+  const { data: perfilData } = useQuery({
+    queryKey: ['perfilUsuario', usuarioId],
+    queryFn: async () => {
+      const response = await clienteAxios.get(`/usuarios/${usuarioId}/perfil`);
+      return response.data;
+    },
+    enabled: !!usuarioId,
+    staleTime: 1000 * 60 * 5,
+  });
 
   useEffect(() => {
-    const cargarDatosDelUsuario = async () => {
-      // Si por alguna razón el contexto todavía no cargó el usuario, frenamos la ejecución
-      if (!usuarioId) return; 
-
-      try {
-        const response = await clienteAxios.get(`/usuarios/${usuarioId}/perfil`);
-        const datos = response.data;
-
-        setDatosPerfil({
-          biografia: datos.biografia || '',
-          telefono: datos.telefono || '',
-          fechaNacimiento: datos.fechaNacimiento || ''
-        });
-
-        if (datos.fotoPerfilUrl) {
-          setPreviewUrl(datos.fotoPerfilUrl);
-        }
-      } catch (error) {
-        console.error('Error al cargar los datos del perfil:', error);
-      }
-    };
-
-    cargarDatosDelUsuario();
-  }, [usuarioId]); // Dependencia dinámica; // Se ejecuta una sola vez al montar el componente
+    if (!perfilData) return;
+    setDatosPerfil({
+      biografia: perfilData.biografia || '',
+      telefono: perfilData.telefono || '',
+      fechaNacimiento: perfilData.fechaNacimiento || ''
+    });
+    if (perfilData.fotoPerfilUrl) {
+      setPreviewUrl(perfilData.fotoPerfilUrl);
+    }
+  }, [perfilData]);
 
   // --- HANDLERS DE LA FOTO (Los que ya tenías) ---
   const handleFileChange = (e) => {
@@ -97,12 +91,12 @@ export const PerfilUsuarioPage = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto py-10 px-4 sm:px-6 lg:px-8 space-y-8">
-      <h1 className="text-3xl font-bold text-gray-900">Mi Perfil</h1>
+    <div className="max-w-4xl mx-auto py-10 px-4 sm:px-6 lg:px-8 space-y-8 bg-gray-50 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300">
+      <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">Mi Perfil</h1>
 
       {/* SECCIÓN 1: FOTO DE PERFIL */}
-      <div className="bg-white shadow rounded-lg p-6 border border-gray-100">
-        <h2 className="text-xl font-semibold mb-6 text-gray-800">Foto de Perfil</h2>
+      <div className="bg-white dark:bg-slate-900 shadow rounded-lg p-6 border border-gray-100 dark:border-slate-700">
+        <h2 className="text-xl font-semibold mb-6 text-gray-800 dark:text-slate-100">Foto de Perfil</h2>
         <div className="flex flex-col sm:flex-row items-center gap-6">
           <div className="relative h-32 w-32 rounded-full overflow-hidden bg-gray-100 border-4 border-gray-200 flex-shrink-0 shadow-sm">
             {previewUrl ? (
@@ -118,7 +112,7 @@ export const PerfilUsuarioPage = () => {
               type="file" 
               accept="image/*" 
               onChange={handleFileChange}
-              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
+              className="block w-full text-sm text-gray-500 dark:text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 dark:file:bg-slate-800 file:text-blue-700 dark:file:text-blue-300 hover:file:bg-blue-100 dark:hover:file:bg-slate-700 cursor-pointer"
             />
             <button
               onClick={handleSubirFoto}
@@ -139,8 +133,8 @@ export const PerfilUsuarioPage = () => {
       </div>
 
       {/* SECCIÓN 2: DATOS PERSONALES */}
-      <div className="bg-white shadow rounded-lg p-6 border border-gray-100">
-        <h2 className="text-xl font-semibold mb-6 text-gray-800">Datos Personales</h2>
+      <div className="bg-white dark:bg-slate-900 shadow rounded-lg p-6 border border-gray-100 dark:border-slate-700">
+        <h2 className="text-xl font-semibold mb-6 text-gray-800 dark:text-slate-100">Datos Personales</h2>
         
         <form onSubmit={handleGuardarDatos} className="space-y-6">
           
@@ -159,7 +153,7 @@ export const PerfilUsuarioPage = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label htmlFor="telefono" className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+              <label htmlFor="telefono" className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Teléfono</label>
               <input
                 type="text"
                 id="telefono"
@@ -172,7 +166,7 @@ export const PerfilUsuarioPage = () => {
             </div>
 
             <div>
-              <label htmlFor="fechaNacimiento" className="block text-sm font-medium text-gray-700 mb-1">Fecha de Nacimiento</label>
+              <label htmlFor="fechaNacimiento" className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Fecha de Nacimiento</label>
               <input
                 type="date"
                 id="fechaNacimiento"

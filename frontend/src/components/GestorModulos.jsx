@@ -1,12 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import clienteAxios from '../api/axiosConfig';
 import axios from 'axios';
 import { ModalCrearTarea } from './ModalCrearTarea'; // 👈 1. IMPORTANTE: Ajustá la ruta si es necesario
 
 export const GestorModulos = ({ cursoId, cursoTitulo }) => {
+  const queryClient = useQueryClient();
+
   // Estados
-  const [modulos, setModulos] = useState([]);
-  const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
   const [entregasSeleccionadas, setEntregasSeleccionadas] = useState(null); // Para mostrar las entregas de un módulo específico
   
@@ -20,30 +21,57 @@ export const GestorModulos = ({ cursoId, cursoTitulo }) => {
 
   // Estados para gestionar lecciones y TAREAS
   const [moduloSeleccionado, setModuloSeleccionado] = useState(null);
+
+  const {
+    data: modulos = [],
+    isLoading: cargando,
+    error: modulosError,
+  } = useQuery({
+    queryKey: ['modulos', cursoId],
+    queryFn: async () => {
+      const response = await clienteAxios.get(`/modulos/curso/${cursoId}`);
+      return Array.isArray(response.data) ? response.data : [];
+    },
+    enabled: !!cursoId,
+    staleTime: 1000 * 60 * 2,
+  });
+
+  const mensajeError = modulosError ? 'Error al cargar los módulos' : error;
+
+  const crearModuloMutation = useMutation({
+    mutationFn: async (nuevoModulo) => {
+      const response = await clienteAxios.post(`/modulos/curso/${cursoId}`, nuevoModulo);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['modulos', cursoId]);
+      setError(null);
+      setMostrandoFormularioModulo(false);
+      setNuevoModulo({ titulo: '', descripcion: '', orden: 1 });
+    },
+    onError: () => {
+      setError('Error al crear el módulo');
+    },
+  });
+
+  const eliminarModuloMutation = useMutation({
+    mutationFn: async (moduloId) => {
+      await clienteAxios.delete(`/modulos/${moduloId}/curso/${cursoId}`);
+      return moduloId;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['modulos', cursoId]);
+      setError(null);
+    },
+    onError: () => {
+      setError('Error al eliminar el módulo');
+    },
+  });
   
   // 👈 2. NUEVOS ESTADOS PARA EL MODAL DE TAREAS
   const [modalTareaAbierto, setModalTareaAbierto] = useState(false);
   const [moduloIdParaTarea, setModuloIdParaTarea] = useState(null);
 
-  // Cargar módulos
-  useEffect(() => {
-    cargarModulos();
-  }, [cursoId]);
-
-  const cargarModulos = async () => {
-    try {
-      setCargando(true);
-      const response = await clienteAxios.get(`/modulos/curso/${cursoId}`);
-      setModulos(Array.isArray(response.data) ? response.data : []);
-      setError(null);
-    } catch (err) {
-      console.error('Error cargando módulos:', err);
-      setError('Error al cargar los módulos');
-      setModulos([]);
-    } finally {
-      setCargando(false);
-    }
-  };
 
   const handleCrearModulo = async (e) => {
     e.preventDefault();
@@ -51,28 +79,12 @@ export const GestorModulos = ({ cursoId, cursoTitulo }) => {
       setError('El título del módulo es obligatorio');
       return;
     }
-    try {
-      const response = await clienteAxios.post(`/modulos/curso/${cursoId}`, nuevoModulo);
-      setModulos([...modulos, response.data.modulo]);
-      setNuevoModulo({ titulo: '', descripcion: '', orden: 1 });
-      setMostrandoFormularioModulo(false);
-      setError(null);
-    } catch (err) {
-      console.error('Error creando módulo:', err);
-      setError('Error al crear el módulo');
-    }
+    crearModuloMutation.mutate(nuevoModulo);
   };
 
-  const handleEliminarModulo = async (moduloId) => {
+  const handleEliminarModulo = (moduloId) => {
     if (window.confirm('¿Estás seguro de eliminar este módulo?')) {
-      try {
-        await clienteAxios.delete(`/modulos/${moduloId}/curso/${cursoId}`);
-        setModulos(modulos.filter(m => m.id !== moduloId));
-        setError(null);
-      } catch (err) {
-        console.error('Error eliminando módulo:', err);
-        setError('Error al eliminar el módulo');
-      }
+      eliminarModuloMutation.mutate(moduloId);
     }
   };
 
@@ -89,9 +101,15 @@ export const GestorModulos = ({ cursoId, cursoTitulo }) => {
       </h2>
       <p className="text-gray-600 mb-6">Organiza el temario de tu curso en módulos y lecciones</p>
 
-      {error && (
+      {cargando && (
+        <div className="mb-4 p-4 bg-blue-50 text-blue-700 rounded-lg">
+          Cargando módulos...
+        </div>
+      )}
+
+      {mensajeError && (
         <div className="mb-4 p-4 bg-red-100 text-red-700 rounded-lg">
-          {error}
+          {mensajeError}
         </div>
       )}
 
@@ -326,7 +344,6 @@ const BuzonCorrecciones = ({ tarea, buzon, cargando, onCampoCambio, onGuardarCor
 
 // Componente para gestionar lecciones de un módulo
 const GestorLecciones = ({ moduloId, moduloTitulo }) => {
-  const [lecciones, setLecciones] = useState([]);
   const [mostrandoFormulario, setMostrandoFormulario] = useState(false);
   const [leccionEditar, setLeccionEditar] = useState(null);
   const [leccionSeleccionada, setLeccionSeleccionada] = useState(null);
@@ -337,47 +354,58 @@ const GestorLecciones = ({ moduloId, moduloTitulo }) => {
     orden: 1
   });
 
-  useEffect(() => {
-    cargarLecciones();
-  }, [moduloId]);
-
-  const cargarLecciones = async () => {
-    try {
+  const {
+    data: lecciones = [],
+  } = useQuery({
+    queryKey: ['lecciones', moduloId],
+    queryFn: async () => {
       const response = await clienteAxios.get(`/lecciones/modulo/${moduloId}`);
-      setLecciones(Array.isArray(response.data) ? response.data : []);
-    } catch (err) {
-      console.error('Error cargando lecciones:', err);
-    }
-  };
+      return Array.isArray(response.data) ? response.data : [];
+    },
+    enabled: !!moduloId,
+    staleTime: 1000 * 60 * 2,
+  });
+
+  const crearLeccionMutation = useMutation({
+    mutationFn: async (leccion) => {
+      const response = await clienteAxios.post(`/lecciones/modulo/${moduloId}`, leccion);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['lecciones', moduloId]);
+      setNuevaLeccion({ titulo: '', descripcion: '', duracionMinutos: 0, orden: 1 });
+      setMostrandoFormulario(false);
+    },
+    onError: () => {
+      alert('Error al crear la lección');
+    },
+  });
+
+  const eliminarLeccionMutation = useMutation({
+    mutationFn: async (leccionId) => {
+      await clienteAxios.delete(`/lecciones/${leccionId}/modulo/${moduloId}`);
+      return leccionId;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['lecciones', moduloId]);
+    },
+    onError: () => {
+      alert('Error al eliminar la lección');
+    },
+  });
 
   const handleCrearLeccion = async (e) => {
     e.preventDefault();
-    
     if (!nuevaLeccion.titulo.trim()) {
       alert('El título de la lección es obligatorio');
       return;
     }
-
-    try {
-      const response = await clienteAxios.post(`/lecciones/modulo/${moduloId}`, nuevaLeccion);
-      setLecciones([...lecciones, response.data.leccion]);
-      setNuevaLeccion({ titulo: '', descripcion: '', duracionMinutos: 0, orden: 1 });
-      setMostrandoFormulario(false);
-    } catch (err) {
-      console.error('Error creando lección:', err);
-      alert('Error al crear la lección');
-    }
+    crearLeccionMutation.mutate(nuevaLeccion);
   };
 
-  const handleEliminarLeccion = async (leccionId) => {
+  const handleEliminarLeccion = (leccionId) => {
     if (window.confirm('¿Estás seguro de eliminar esta lección?')) {
-      try {
-        await clienteAxios.delete(`/lecciones/${leccionId}/modulo/${moduloId}`);
-        setLecciones(lecciones.filter(l => l.id !== leccionId));
-      } catch (err) {
-        console.error('Error eliminando lección:', err);
-        alert('Error al eliminar la lección');
-      }
+      eliminarLeccionMutation.mutate(leccionId);
     }
   };
 
@@ -486,7 +514,6 @@ const GestorLecciones = ({ moduloId, moduloTitulo }) => {
 
 // Componente para gestionar recursos de una lección (Actualizado con Cloudinary)
 const GestorRecursos = ({ leccionId, leccionTitulo }) => {
-  const [recursos, setRecursos] = useState([]);
   const [mostrandoFormulario, setMostrandoFormulario] = useState(false);
   
   // Estados para el formulario
@@ -503,18 +530,50 @@ const GestorRecursos = ({ leccionId, leccionTitulo }) => {
   const [subiendo, setSubiendo] = useState(false);
   const [progreso, setProgreso] = useState(0);
 
-  useEffect(() => {
-    cargarRecursos();
-  }, [leccionId]);
-
-  const cargarRecursos = async () => {
-    try {
+  const {
+    data: recursos = [],
+  } = useQuery({
+    queryKey: ['recursos', leccionId],
+    queryFn: async () => {
       const response = await clienteAxios.get(`/recursos/leccion/${leccionId}`);
-      setRecursos(Array.isArray(response.data) ? response.data : []);
-    } catch (err) {
-      console.error('Error cargando recursos:', err);
+      return Array.isArray(response.data) ? response.data : [];
+    },
+    enabled: !!leccionId,
+    staleTime: 1000 * 60 * 2,
+  });
+
+  const crearRecursoMutation = useMutation({
+    mutationFn: async (payload) => {
+      const response = await clienteAxios.post(`/recursos/leccion/${leccionId}`, payload);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['recursos', leccionId]);
+      setNuevoRecurso({ titulo: '', tipo: 'VIDEO', urlRecurso: '', descripcion: '', orden: 1 });
+      setArchivo(null);
+      setMostrandoFormulario(false);
+      setProgreso(0);
+    },
+    onError: () => {
+      alert('Error al crear el recurso');
+    },
+    onSettled: () => {
+      setSubiendo(false);
     }
-  };
+  });
+
+  const eliminarRecursoMutation = useMutation({
+    mutationFn: async (recursoId) => {
+      await clienteAxios.delete(`/recursos/${recursoId}/leccion/${leccionId}`);
+      return recursoId;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['recursos', leccionId]);
+    },
+    onError: () => {
+      alert('Error al eliminar el recurso');
+    }
+  });
 
   const handleCrearRecurso = async (e) => {
     e.preventDefault();
@@ -570,33 +629,21 @@ const GestorRecursos = ({ leccionId, leccionTitulo }) => {
 
       // 4. Guardamos en NUESTRO backend
       const payload = { ...nuevoRecurso, urlRecurso: urlFinal };
-      const response = await clienteAxios.post(`/recursos/leccion/${leccionId}`, payload);
+      crearRecursoMutation.mutate(payload);
       
-      setRecursos([...recursos, response.data.recurso]);
-      
-      // Limpiamos los estados
-      setNuevoRecurso({ titulo: '', tipo: 'VIDEO', urlRecurso: '', descripcion: '', orden: 1 });
+      // Limpiamos el archivo local mientras se procesa la mutación
       setArchivo(null);
-      setMostrandoFormulario(false);
-      setProgreso(0);
 
     } catch (err) {
       console.error('Error creando recurso:', err);
       alert('Error al crear el recurso');
-    } finally {
       setSubiendo(false);
     }
   };
 
-  const handleEliminarRecurso = async (recursoId) => {
+  const handleEliminarRecurso = (recursoId) => {
     if (window.confirm('¿Estás seguro de eliminar este recurso?')) {
-      try {
-        await clienteAxios.delete(`/recursos/${recursoId}/leccion/${leccionId}`);
-        setRecursos(recursos.filter(r => r.id !== recursoId));
-      } catch (err) {
-        console.error('Error eliminando recurso:', err);
-        alert('Error al eliminar el recurso');
-      }
+      eliminarRecursoMutation.mutate(recursoId);
     }
   };
 
@@ -740,34 +787,39 @@ const GestorRecursos = ({ leccionId, leccionTitulo }) => {
 };
 // --- NUEVO COMPONENTE: GESTOR DE ENTREGAS ---
 const GestorEntregas = ({ moduloId, moduloTitulo }) => {
-  const [tareas, setTareas] = useState([]);
   const [modalAbierto, setModalAbierto] = useState(false);
   const [tareaBuzon, setTareaBuzon] = useState(null);
   const [buzon, setBuzon] = useState([]);
   const [cargandoBuzon, setCargandoBuzon] = useState(false);
 
-  useEffect(() => {
-    cargarTareas();
-  }, [moduloId]);
-
-  const cargarTareas = async () => {
-    try {
+  const {
+    data: tareas = [],
+  } = useQuery({
+    queryKey: ['tareas', moduloId],
+    queryFn: async () => {
       const response = await clienteAxios.get(`/tareas/modulo/${moduloId}`);
-      setTareas(Array.isArray(response.data) ? response.data : []);
-    } catch (err) {
-      console.error('Error cargando tareas:', err);
-    }
-  };
+      return Array.isArray(response.data) ? response.data : [];
+    },
+    enabled: !!moduloId,
+    staleTime: 1000 * 60 * 2,
+  });
 
-  const handleEliminarTarea = async (tareaId) => {
+  const eliminarTareaMutation = useMutation({
+    mutationFn: async (tareaId) => {
+      await clienteAxios.delete(`/tareas/${tareaId}`);
+      return tareaId;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['tareas', moduloId]);
+    },
+    onError: () => {
+      alert('Error al eliminar la entrega');
+    }
+  });
+
+  const handleEliminarTarea = (tareaId) => {
     if (window.confirm('¿Estás seguro de eliminar esta entrega?')) {
-      try {
-        await clienteAxios.delete(`/tareas/${tareaId}`);
-        setTareas(tareas.filter(t => t.id !== tareaId));
-      } catch (err) {
-        console.error('Error eliminando tarea:', err);
-        alert('Error al eliminar la entrega');
-      }
+      eliminarTareaMutation.mutate(tareaId);
     }
   };
 
@@ -888,7 +940,7 @@ const GestorEntregas = ({ moduloId, moduloTitulo }) => {
         onClose={() => setModalAbierto(false)}
         moduloId={moduloId}
         onTareaCreada={() => {
-          cargarTareas(); // Recargamos la lista automáticamente
+          queryClient.invalidateQueries(['tareas', moduloId]);
         }}
       />
     </div>

@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import clienteAxios from '../api/axiosConfig';
 
 export const VerificarCuentaPage = () => {
@@ -7,43 +8,38 @@ export const VerificarCuentaPage = () => {
   const token = searchParams.get('token');
   const navigate = useNavigate();
 
-  const [estado, setEstado] = useState({
-    cargando: true,
-    mensaje: 'Verificando tu cuenta, por favor esperá...',
-    tipo: 'info'
+  const { isLoading: cargando, data: respuesta } = useQuery({
+    queryKey: ['verificarCuenta', token],
+    queryFn: async () => {
+      if (!token) {
+        throw new Error('No se encontró el token de seguridad en la URL.');
+      }
+      const response = await clienteAxios.post('/auth/verificar', { token });
+      return { message: response.data.mensaje, success: true };
+    },
+    enabled: !!token,
+    retry: 1,
+    staleTime: Infinity,
   });
 
-  // El useEffect se ejecuta solito apenas carga la página
-  useEffect(() => {
-    const verificar = async () => {
-      if (!token) {
-        setEstado({ cargando: false, mensaje: 'No se encontró el token de seguridad en la URL.', tipo: 'error' });
-        return;
-      }
+  // Si se verificó exitosamente, redirigir después de 3 segundos
+  if (respuesta?.success && !cargando) {
+    setTimeout(() => {
+      navigate('/login');
+    }, 3000);
+  }
 
-      try {
-        const response = await clienteAxios.post('/auth/verificar', { token });
-        setEstado({ cargando: false, mensaje: response.data.mensaje, tipo: 'exito' });
-        
-        // Si sale bien, lo mandamos al login en 3 segundos
-        setTimeout(() => {
-          navigate('/login');
-        }, 3000);
-
-      } catch (error) {
-        const msj = error.response?.data?.mensaje || 'Error al verificar la cuenta. El link puede estar vencido.';
-        setEstado({ cargando: false, mensaje: msj, tipo: 'error' });
-      }
-    };
-
-    verificar();
-  }, [token, navigate]);
+  const estado = {
+    cargando,
+    mensaje: respuesta?.message || 'Verificando tu cuenta, por favor esperá...',
+    tipo: respuesta?.success ? 'exito' : 'error'
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4">
-      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-2xl shadow-lg border border-gray-100 text-center">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-950 dark:text-slate-100 py-12 px-4 transition-colors duration-300">
+      <div className="max-w-md w-full space-y-8 bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-lg dark:shadow-none border border-gray-100 dark:border-slate-700 text-center">
         
-        <h2 className="text-3xl font-extrabold text-gray-900 mb-6">Verificación de Cuenta</h2>
+        <h2 className="text-3xl font-extrabold text-gray-900 dark:text-slate-100 mb-6">Verificación de Cuenta</h2>
 
         {estado.cargando ? (
           <div className="flex flex-col items-center justify-center space-y-4">
@@ -52,7 +48,9 @@ export const VerificarCuentaPage = () => {
           </div>
         ) : (
           <div className={`p-4 rounded-lg font-bold ${
-            estado.tipo === 'exito' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+            estado.tipo === 'exito'
+              ? 'bg-green-100 dark:bg-emerald-950 text-green-700 dark:text-emerald-300'
+              : 'bg-red-100 dark:bg-rose-950 text-red-700 dark:text-rose-300'
           }`}>
             {estado.mensaje}
           </div>

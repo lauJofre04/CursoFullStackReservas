@@ -1,4 +1,5 @@
 import { useState, useEffect, forwardRef } from 'react';
+import { useQueryClient, useMutation } from '@tanstack/react-query';
 import clienteAxios from '../api/axiosConfig';
 
 export const FormularioCurso = forwardRef(({ cursos, setCursos }, ref) => {
@@ -8,104 +9,138 @@ export const FormularioCurso = forwardRef(({ cursos, setCursos }, ref) => {
   const [precio, setPrecio] = useState('');
   const [imagenCurso, setImagenCurso] = useState(null);
   const [previewImagenCurso, setPreviewImagenCurso] = useState(null);
+  const [categoria, setCategoria] = useState('');
+  const [nuevaCategoria, setNuevaCategoria] = useState('');
+  const [dificultad, setDificultad] = useState('Principiante');
+  const [categoriasDisponibles, setCategoriasDisponibles] = useState([]);
+  const [categoriaNuevaSeleccionada, setCategoriaNuevaSeleccionada] = useState(false);
   
   // Estados para darle feedback al usuario
   const [mensaje, setMensaje] = useState({ texto: '', tipo: '' });
-  const [cargando, setCargando] = useState(false);
   
   // Estados para edición de cursos
   const [cursoEnEdicion, setCursoEnEdicion] = useState(null);
   const [idCursoEditando, setIdCursoEditando] = useState(null);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    setCargando(true);
-    setMensaje({ texto: '', tipo: '' });
+  const queryClient = useQueryClient();
 
-    try {
-      // Detectamos si estamos en modo edición o creación
-      if (idCursoEditando) {
-        // MODO EDICIÓN: Solo actualizamos con los campos que cambiaron
-        const datosActualizados = {};
-        
-        if (titulo !== cursoEnEdicion.titulo) datosActualizados.titulo = titulo;
-        if (descripcion !== cursoEnEdicion.descripcion) datosActualizados.descripcion = descripcion;
-        if (precio !== cursoEnEdicion.precio.toString()) datosActualizados.precio = parseFloat(precio);
-        // La imagen solo se actualiza si el usuario selecciona una nueva
-        if (imagenCurso) datosActualizados.imagen = imagenCurso;
-
-        // Si hay cambios, hacemos el PUT
-        if (Object.keys(datosActualizados).length > 0 || imagenCurso) {
-          let response;
-          
-          if (imagenCurso) {
-            // Si hay imagen nueva, usamos FormData
-            const formData = new FormData();
-            formData.append('titulo', titulo);
-            formData.append('descripcion', descripcion);
-            formData.append('precio', parseFloat(precio));
-            formData.append('file', imagenCurso);
-
-            response = await clienteAxios.put(`/cursos/${idCursoEditando}/imagen`, formData, {
-              headers: { 'Content-Type': 'multipart/form-data' }
-            });
-          } else {
-            // Sin imagen nueva, enviamos JSON
-            response = await clienteAxios.put(`/cursos/${idCursoEditando}`, {
-              titulo,
-              descripcion,
-              precio: parseFloat(precio),
-              imagen: cursoEnEdicion.imagen
-            });
-          }
-
-          // Actualizar el listado de cursos
-          setCursos(cursos.map(c => c.id === idCursoEditando ? response.data : c));
-          setMensaje({ texto: '¡Curso actualizado correctamente!', tipo: 'exito' });
-        } else {
-          setMensaje({ texto: 'No hay cambios para guardar', tipo: 'info' });
-        }
-
-        // Limpiar modo edición
-        setCursoEnEdicion(null);
-        setIdCursoEditando(null);
-      } else {
-        // MODO CREACIÓN: Crear nuevo curso
-        if (!imagenCurso) {
-          setMensaje({ texto: 'Por favor selecciona una imagen para el curso', tipo: 'error' });
-          setCargando(false);
-          return;
-        }
-
-        const formData = new FormData();
-        formData.append('titulo', titulo);
-        formData.append('descripcion', descripcion);
-        formData.append('precio', parseFloat(precio));
-        formData.append('file', imagenCurso);
-
-        const response = await clienteAxios.post('/cursos', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
-
-        // Agregar el nuevo curso al listado
-        setCursos([...cursos, response.data]);
-        setMensaje({ texto: '¡Curso creado con éxito! Ya está visible en la vidriera.', tipo: 'exito' });
-      }
-      
-      // Limpiamos el formulario
-      setTitulo('');
-      setDescripcion('');
-      setPrecio('');
-      setImagenCurso(null);
-      setPreviewImagenCurso(null);
-    } catch (error) {
+  // Mutation para crear curso
+  const crearCursoMutation = useMutation({
+    mutationFn: async (formData) => {
+      const response = await clienteAxios.post('/cursos', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      return response.data;
+    },
+    onSuccess: (nuevoCliente) => {
+      setCursos([...cursos, nuevoCliente]);
+      queryClient.invalidateQueries({ queryKey: ['cursos'] });
+      setMensaje({ texto: '¡Curso creado con éxito! Ya está visible en la vidriera.', tipo: 'exito' });
+      resetFormulario();
+    },
+    onError: (error) => {
       console.error(error);
       setMensaje({ texto: 'Hubo un error al guardar el curso. Revisa la consola.', tipo: 'error' });
-    } finally {
-      setCargando(false);
+    }
+  });
+
+  // Mutation para actualizar curso
+  const actualizarCursoMutation = useMutation({
+    mutationFn: async ({ id, formData, datos }) => {
+      let response;
+      if (formData) {
+        response = await clienteAxios.put(`/cursos/${id}/imagen`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+      } else {
+        response = await clienteAxios.put(`/cursos/${id}`, datos);
+      }
+      return response.data;
+    },
+    onSuccess: (cursoActualizado) => {
+      setCursos(cursos.map(c => c.id === cursoActualizado.id ? cursoActualizado : c));
+      queryClient.invalidateQueries({ queryKey: ['cursos'] });
+      setMensaje({ texto: '¡Curso actualizado correctamente!', tipo: 'exito' });
+      setCursoEnEdicion(null);
+      setIdCursoEditando(null);
+      resetFormulario();
+    },
+    onError: (error) => {
+      console.error(error);
+      setMensaje({ texto: 'Hubo un error al actualizar el curso. Revisa la consola.', tipo: 'error' });
+    }
+  });
+
+  const resetFormulario = () => {
+    setTitulo('');
+    setDescripcion('');
+    setPrecio('');
+    setImagenCurso(null);
+    setPreviewImagenCurso(null);
+    setCategoria('');
+    setNuevaCategoria('');
+    setDificultad('Principiante');
+    setCategoriaNuevaSeleccionada(false);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setMensaje({ texto: '', tipo: '' });
+
+    const categoriaParaEnviar = categoria === 'nueva-categoria' ? nuevaCategoria.trim() : categoria;
+    const datosBasicos = {
+      titulo,
+      descripcion,
+      precio: parseFloat(precio),
+      categoria: categoriaParaEnviar,
+      dificultad,
+    };
+
+    // Detectamos si estamos en modo edición o creación
+    if (idCursoEditando) {
+      const payload = {
+        ...datosBasicos,
+        imagen: cursoEnEdicion.imagen
+      };
+
+      if (imagenCurso) {
+        const formData = new FormData();
+        Object.entries(payload).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            formData.append(key, value);
+          }
+        });
+        formData.append('file', imagenCurso);
+
+        actualizarCursoMutation.mutate({ id: idCursoEditando, formData });
+      } else {
+        actualizarCursoMutation.mutate({ id: idCursoEditando, datos: payload });
+      }
+    } else {
+      if (!imagenCurso) {
+        setMensaje({ texto: 'Por favor selecciona una imagen para el curso', tipo: 'error' });
+        return;
+      }
+
+      const formData = new FormData();
+      Object.entries(datosBasicos).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          formData.append(key, value);
+        }
+      });
+      formData.append('file', imagenCurso);
+
+      crearCursoMutation.mutate(formData);
     }
   };
+
+  useEffect(() => {
+    const categorias = Array.from(new Set(cursos.map((curso) => curso.categoria || curso.tipo || '').filter(Boolean)));
+    if (categoria && !categorias.includes(categoria) && categoria !== 'nueva-categoria') {
+      categorias.push(categoria);
+    }
+    setCategoriasDisponibles(categorias.sort());
+  }, [cursos, categoria]);
 
   const handleEditarCurso = (curso) => {
     // Llenamos el formulario con los datos del curso
@@ -114,6 +149,10 @@ export const FormularioCurso = forwardRef(({ cursos, setCursos }, ref) => {
     setPrecio(curso.precio.toString());
     setPreviewImagenCurso(curso.imagen);
     setImagenCurso(null); // No hay archivo seleccionado aún
+    setCategoria(curso.categoria || curso.tipo || '');
+    setDificultad(curso.dificultad || curso.nivel || 'Principiante');
+    setNuevaCategoria('');
+    setCategoriaNuevaSeleccionada(false);
     
     // Guardamos el curso original y el ID para la edición
     setCursoEnEdicion(curso);
@@ -199,6 +238,52 @@ export const FormularioCurso = forwardRef(({ cursos, setCursos }, ref) => {
             />
           </div>
 
+          {/* Categoría */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Categoría</label>
+            <select
+              value={categoria}
+              onChange={(e) => {
+                const value = e.target.value;
+                setCategoria(value);
+                setCategoriaNuevaSeleccionada(value === 'nueva-categoria');
+              }}
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+              required={!idCursoEditando}
+            >
+              <option value="">Seleccionar categoría</option>
+              {categoriasDisponibles.map((cat) => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+              <option value="nueva-categoria">+ Nueva categoría</option>
+            </select>
+            {categoria === 'nueva-categoria' && (
+              <input
+                type="text"
+                value={nuevaCategoria}
+                onChange={(e) => setNuevaCategoria(e.target.value)}
+                className="mt-3 w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                placeholder="Escribe una nueva categoría"
+                required
+              />
+            )}
+          </div>
+
+          {/* Dificultad */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Dificultad</label>
+            <select
+              value={dificultad}
+              onChange={(e) => setDificultad(e.target.value)}
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+              required
+            >
+              <option value="Principiante">Principiante</option>
+              <option value="Intermedio">Intermedio</option>
+              <option value="Avanzado">Avanzado</option>
+            </select>
+          </div>
+
           {/* Imagen del Curso */}
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-2">Imagen del Curso</label>
@@ -247,10 +332,10 @@ export const FormularioCurso = forwardRef(({ cursos, setCursos }, ref) => {
 
         <button
           type="submit"
-          disabled={cargando}
-          className={`w-full text-white font-bold py-4 rounded-xl transition-colors shadow-md text-lg ${cargando ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
+          disabled={crearCursoMutation.isPending || actualizarCursoMutation.isPending}
+          className={`w-full text-white font-bold py-4 rounded-xl transition-colors shadow-md text-lg ${crearCursoMutation.isPending || actualizarCursoMutation.isPending ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
         >
-          {cargando ? 'Guardando...' : idCursoEditando ? '💾 Actualizar Curso' : '📤 Publicar Curso'}
+          {crearCursoMutation.isPending || actualizarCursoMutation.isPending ? 'Guardando...' : idCursoEditando ? '💾 Actualizar Curso' : '📤 Publicar Curso'}
         </button>
       </form>
     </div>

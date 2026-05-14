@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import clienteAxios from '../api/axiosConfig';
 import { useAuth } from '../context/AuthContext';
 import { FormularioCurso } from '../components/FormularioCurso';
@@ -25,8 +26,6 @@ export const PanelPage = () => {
   const formularioCursoRef = useRef();
 
   // Estados globales
-  const [cursos, setCursos] = useState([]);
-  const [cargandoCursos, setCargandoCursos] = useState(false);
   const [seccionActiva, setSeccionActiva] = useState('matricular');
 
   // Estados para perfil
@@ -43,50 +42,56 @@ export const PanelPage = () => {
   const [estadisticas, setEstadisticas] = useState(null);
   const [cargandoEstadisticas, setCargandoEstadisticas] = useState(false);
   const [errorEstadisticas, setErrorEstadisticas] = useState(null);
+  const [periodoEstadisticas, setPeriodoEstadisticas] = useState('semana');
+  const [exportandoCsv, setExportandoCsv] = useState(false);
+
+  const periodosDisponibles = [
+    { value: 'semana', label: 'Última semana' },
+    { value: 'mes', label: 'Último mes' },
+    { value: 'ultimos90dias', label: 'Últimos 3 meses' },
+    { value: 'todos', label: 'Todo' },
+  ];
 
   // Cargar cursos al montar el componente
-  useEffect(() => {
-    const cargarCursos = async () => {
-      setCargandoCursos(true);
-      try {
-        const response = await clienteAxios.get('/cursos');
-        // Maneja diferentes estructuras de respuesta
-        const datos = Array.isArray(response.data) 
-          ? response.data 
-          : response.data?.content 
-          ? response.data.content 
-          : [];
-        setCursos(datos);
-        console.log('Cursos cargados:', datos);
-      } catch (error) {
-        console.error('Error al cargar los cursos:', error);
-        setCursos([]);
-      } finally {
-        setCargandoCursos(false);
-      }
-    };
-    cargarCursos();
+  const {
+    data: cursos = [],
+    isLoading: cargandoCursos,
+  } = useQuery({
+    queryKey: ['panelCursos'],
+    queryFn: async () => {
+      const response = await clienteAxios.get('/cursos');
+      const datos = Array.isArray(response.data) 
+        ? response.data 
+        : response.data?.content 
+        ? response.data.content 
+        : [];
+      return datos;
+    },
+    staleTime: 1000 * 60 * 2,
+  });
 
-    // Cargar datos del perfil
-    const cargarDatosDelUsuario = async () => {
-      if (!usuario?.id) return;
-      try {
-        const response = await clienteAxios.get(`/usuarios/${usuario.id}/perfil`);
-        const datos = response.data;
-        setDatosPerfil({
-          biografia: datos.biografia || '',
-          telefono: datos.telefono || '',
-          fechaNacimiento: datos.fechaNacimiento || ''
-        });
-        if (datos.fotoPerfilUrl) {
-          setPreviewUrl(datos.fotoPerfilUrl);
-        }
-      } catch (error) {
-        console.error('Error al cargar los datos del perfil:', error);
-      }
-    };
-    cargarDatosDelUsuario();
-  }, [usuario?.id]);
+  const { data: perfilUsuario } = useQuery({
+    queryKey: ['perfilUsuario', usuario?.id],
+    queryFn: async () => {
+      if (!usuario?.id) return null;
+      const response = await clienteAxios.get(`/usuarios/${usuario.id}/perfil`);
+      return response.data;
+    },
+    enabled: !!usuario?.id,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  useEffect(() => {
+    if (!perfilUsuario) return;
+    setDatosPerfil({
+      biografia: perfilUsuario.biografia || '',
+      telefono: perfilUsuario.telefono || '',
+      fechaNacimiento: perfilUsuario.fechaNacimiento || ''
+    });
+    if (perfilUsuario.fotoPerfilUrl) {
+      setPreviewUrl(perfilUsuario.fotoPerfilUrl);
+    }
+  }, [perfilUsuario]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -146,12 +151,15 @@ export const PanelPage = () => {
     }
   };
 
-  const cargarEstadisticas = async () => {
+  const cargarEstadisticas = async (periodo = periodoEstadisticas) => {
     setCargandoEstadisticas(true);
     setErrorEstadisticas(null);
 
     try {
-      const response = await clienteAxios.get('/admin/estadisticas');
+      const endpoint = periodo && periodo !== 'todos'
+        ? `/admin/estadisticas?periodo=${periodo}`
+        : '/admin/estadisticas';
+      const response = await clienteAxios.get(endpoint);
       setEstadisticas(response.data);
     } catch (error) {
       setErrorEstadisticas('No se pudieron cargar las estadísticas. Revisa tu sesión o intenta de nuevo.');
@@ -167,6 +175,38 @@ export const PanelPage = () => {
     }
   }, [seccionActiva]);
 
+  const handleCambioPeriodo = async (nuevaOpcion) => {
+    setPeriodoEstadisticas(nuevaOpcion);
+    await cargarEstadisticas(nuevaOpcion);
+  };
+
+  const handleExportarCSV = () => {
+    if (!estadisticas) return;
+    setExportandoCsv(true);
+
+    const rows = [];
+    rows.push(['Periodo', periodosDisponibles.find((p) => p.value === periodoEstadisticas)?.label || 'Todo']);
+    rows.push(['Total usuarios', estadisticas.totalUsuarios ?? '']);
+    rows.push(['Ingresos aprobados', estadisticas.ingresosTotales != null ? formatearMoneda(estadisticas.ingresosTotales) : '']);
+    rows.push([]);
+    rows.push(['Curso', 'Inscripciones', 'Porcentaje']);
+    (estadisticas.cursosMasInscritos || []).forEach((curso) => {
+      rows.push([curso.titulo, curso.inscripciones, `${curso.porcentaje ?? ''}%`]);
+    });
+
+    const csvContent = rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `metricas_${periodoEstadisticas}_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    setExportandoCsv(false);
+  };
+
   const formatearMoneda = (valor) => {
     return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(valor);
   };
@@ -176,10 +216,10 @@ export const PanelPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300">
       {/* SIDEBAR */}
       <div className="flex h-screen">
-        <aside className="w-64 bg-white shadow-lg p-6 flex flex-col">
+        <aside className="w-64 bg-white dark:bg-slate-900 dark:border-slate-700 shadow-lg p-6 flex flex-col">
           <div className="mb-8">
             <h2 className="text-xl font-bold text-gray-800">Hola {usuario?.nombre || 'Admin'}</h2>
           </div>
@@ -384,7 +424,27 @@ export const PanelPage = () => {
             {/* Métricas Administrativas */}
             {seccionActiva === 'estadisticas' && (
               <div className="space-y-8">
-                <h1 className="text-3xl font-bold text-gray-800 mb-8">📊 Métricas Administrativas</h1>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <h1 className="text-3xl font-bold text-gray-800">📊 Métricas Administrativas</h1>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                    <select
+                      value={periodoEstadisticas}
+                      onChange={(e) => handleCambioPeriodo(e.target.value)}
+                      className="rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      {periodosDisponibles.map((option) => (
+                        <option key={option.value} value={option.value}>{option.label}</option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={handleExportarCSV}
+                      disabled={!estadisticas || exportandoCsv}
+                      className="rounded-xl bg-slate-900 text-white px-4 py-2 text-sm font-semibold hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {exportandoCsv ? 'Exportando...' : 'Exportar a CSV'}
+                    </button>
+                  </div>
+                </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="bg-white shadow rounded-lg p-6 border border-gray-100">

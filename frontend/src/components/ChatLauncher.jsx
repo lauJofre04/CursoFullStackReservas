@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client/dist/sockjs.js';
 import clienteAxios from '../api/axiosConfig';
@@ -11,7 +12,26 @@ export const ChatLauncher = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const clientRef = useRef(null);
   const userSubscriptionRef = useRef(null);
-  
+
+  const {
+    data: conversacionesData = [],
+    refetch: refetchConversaciones,
+  } = useQuery({
+    queryKey: ['conversaciones', usuario?.id],
+    queryFn: async () => {
+      const response = await clienteAxios.get('/chat/conversaciones');
+      return response.data || [];
+    },
+    enabled: !!usuario?.id,
+    staleTime: 1000 * 60 * 2,
+    refetchOnWindowFocus: false,
+  });
+
+  useEffect(() => {
+    setUnreadCount(
+      conversacionesData.reduce((sum, conversacion) => sum + (conversacion.mensajesNoLeidos || 0), 0),
+    );
+  }, [conversacionesData]);
 
   useEffect(() => {
     if (!usuario) {
@@ -28,29 +48,13 @@ export const ChatLauncher = () => {
       debug: () => {},
       reconnectDelay: 5000,
       onConnect: async () => {
-        try {
-          const response = await clienteAxios.get('/chat/conversaciones');
-          const conversacionesData = response.data || [];
-          const totalUnread = conversacionesData.reduce(
-            (sum, conversacion) => sum + (conversacion.mensajesNoLeidos || 0),
-            0,
-          );
-          setUnreadCount(totalUnread);
-        } catch (error) {
-          console.error('Error cargando conversaciones para contador:', error);
-        }
+        refetchConversaciones();
 
         userSubscriptionRef.current = client.subscribe(
           `/topic/user.${usuario.id}`,
-          async (message) => {
+          async () => {
             try {
-              const response = await clienteAxios.get('/chat/conversaciones');
-              const conversacionesData = response.data || [];
-              const totalUnread = conversacionesData.reduce(
-                (sum, conversacion) => sum + (conversacion.mensajesNoLeidos || 0),
-                0,
-              );
-              setUnreadCount(totalUnread);
+              await refetchConversaciones();
             } catch (error) {
               console.error('Error actualizando contador:', error);
             }
@@ -88,16 +92,16 @@ export const ChatLauncher = () => {
       </button>
 
       {abierto && (
-        <div className="pointer-events-auto absolute bottom-20 right-4 w-[95vw] max-w-[420px] max-h-[76vh] rounded-[2rem] border border-slate-200 bg-white shadow-2xl shadow-slate-900/10">
-          <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+        <div className="pointer-events-auto absolute bottom-20 right-4 w-[95vw] max-w-[420px] max-h-[76vh] rounded-[2rem] border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl shadow-slate-900/10">
+          <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 px-4 py-3">
             <div>
-              <p className="font-semibold text-slate-900">Chat</p>
-              <p className="text-xs text-slate-500">Mensajes en tiempo real</p>
+              <p className="font-semibold text-slate-900 dark:text-slate-100">Chat</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Mensajes en tiempo real</p>
             </div>
             <button
               type="button"
               onClick={() => setAbierto(false)}
-              className="rounded-full bg-slate-100 px-3 py-2 text-slate-700 hover:bg-slate-200"
+              className="rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700"
               aria-label="Cerrar chat"
             >
               ✕

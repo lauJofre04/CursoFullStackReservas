@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import clienteAxios from '../api/axiosConfig';
 
 export const FormularioMatriculacion = ({ cursos, cargandoCursos }) => {
@@ -6,7 +7,22 @@ export const FormularioMatriculacion = ({ cursos, cargandoCursos }) => {
   const [emailAlumno, setEmailAlumno] = useState('');
   const [idCursoAsignar, setIdCursoAsignar] = useState('');
   const [alertaInscripcion, setAlertaInscripcion] = useState(null);
-  const [procesandoAdmin, setProcesandoAdmin] = useState(false);
+
+  const matricularMutation = useMutation({
+    mutationFn: async (datos) => {
+      const response = await clienteAxios.post('/inscripciones/admin/matricular', datos);
+      return response.data.mensaje || "¡Alumno matriculado correctamente!";
+    },
+    onSuccess: (mensaje) => {
+      setAlertaInscripcion({ tipo: 'exito', texto: mensaje });
+      setEmailAlumno('');
+      setIdCursoAsignar('');
+    },
+    onError: (error) => {
+      const msj = error.response?.data?.mensaje || "Error al matricular al alumno";
+      setAlertaInscripcion({ tipo: 'error', texto: msj });
+    }
+  });
 
   const handleInscripcionAdmin = async (e) => {
     e.preventDefault();
@@ -16,25 +32,12 @@ export const FormularioMatriculacion = ({ cursos, cargandoCursos }) => {
       return;
     }
     
-    setProcesandoAdmin(true);
     setAlertaInscripcion(null);
-
-    try {
-      const response = await clienteAxios.post('/inscripciones/admin/matricular', {
-        emailUsuario: emailAlumno,
-        cursoId: parseInt(idCursoAsignar),
-        metodoAcceso: 'MANUAL_ADMIN'
-      });
-      
-      setAlertaInscripcion({ tipo: 'exito', texto: response.data.mensaje || "¡Alumno matriculado correctamente!" });
-      setEmailAlumno('');
-      setIdCursoAsignar('');
-    } catch (error) {
-      const msj = error.response?.data?.mensaje || "Error al matricular al alumno";
-      setAlertaInscripcion({ tipo: 'error', texto: msj });
-    } finally {
-      setProcesandoAdmin(false);
-    }
+    matricularMutation.mutate({
+      emailUsuario: emailAlumno,
+      cursoId: parseInt(idCursoAsignar),
+      metodoAcceso: 'MANUAL_ADMIN'
+    });
   };
 
   return (
@@ -85,12 +88,12 @@ export const FormularioMatriculacion = ({ cursos, cargandoCursos }) => {
 
         <button 
           type="submit"
-          disabled={procesandoAdmin}
+          disabled={matricularMutation.isPending}
           className={`w-full py-3 mt-4 rounded-lg font-bold text-white transition-colors ${
-            procesandoAdmin ? 'bg-gray-400 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700'
+            matricularMutation.isPending ? 'bg-gray-400 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700'
           }`}
         >
-          {procesandoAdmin ? 'Procesando...' : 'Asignar Curso al Alumno'}
+          {matricularMutation.isPending ? 'Procesando...' : 'Asignar Curso al Alumno'}
         </button>
       </form>
     </div>

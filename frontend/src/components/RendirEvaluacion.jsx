@@ -1,32 +1,42 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import clienteAxios from '../api/axiosConfig';
 
 export const RendirEvaluacion = () => {
   const { evaluacionId } = useParams(); // Asumimos que la ruta será algo como /evaluacion/:evaluacionId
   const navigate = useNavigate();
 
-  const [evaluacion, setEvaluacion] = useState(null);
   const [respuestas, setRespuestas] = useState({}); // Guardará { preguntaId: opcionId }
   const [resultado, setResultado] = useState(null); // Guardará la nota que devuelva el backend
-  const [cargando, setCargando] = useState(true);
-  const [enviando, setEnviando] = useState(false);
 
-  useEffect(() => {
-    const fetchEvaluacion = async () => {
-      try {
-        // Pedimos el examen "limpio" al backend
-        const res = await clienteAxios.get(`/evaluaciones/${evaluacionId}`);
-        setEvaluacion(res.data);
-      } catch (error) {
-        console.error("Error al cargar la evaluación", error);
-        alert("No se pudo cargar el examen.");
-      } finally {
-        setCargando(false);
-      }
-    };
-    fetchEvaluacion();
-  }, [evaluacionId]);
+  const {
+    data: evaluacion,
+    isLoading: cargando,
+    error: evaluacionError,
+  } = useQuery({
+    queryKey: ['evaluacion', evaluacionId],
+    queryFn: async () => {
+      const res = await clienteAxios.get(`/evaluaciones/${evaluacionId}`);
+      return res.data;
+    },
+    enabled: !!evaluacionId,
+    staleTime: 1000 * 60 * 2,
+  });
+
+  const mutation = useMutation({
+    mutationFn: async (submitData) => {
+      const res = await clienteAxios.post('/evaluaciones/enviar', submitData);
+      return res.data;
+    },
+    onSuccess: (data) => {
+      setResultado(data);
+    },
+    onError: (error) => {
+      console.error('Error al enviar el examen', error);
+      alert('Hubo un problema al corregir el examen.');
+    },
+  });
 
   // Manejador para cuando el alumno elige una opción
   const handleSeleccion = (preguntaId, opcionId) => {
@@ -39,32 +49,22 @@ export const RendirEvaluacion = () => {
   // Enviar el examen al backend para que lo corrija
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Validación: obligamos a que responda todas las preguntas
+
+    if (!evaluacion) return;
     if (Object.keys(respuestas).length < evaluacion.preguntas.length) {
-      return alert("⚠️ Por favor, responde todas las preguntas antes de entregar el examen.");
+      return alert('⚠️ Por favor, responde todas las preguntas antes de entregar el examen.');
     }
 
-    setEnviando(true);
-    try {
-      const submitData = {
-        evaluacionId: parseInt(evaluacionId),
-        respuestas: respuestas
-      };
+    const submitData = {
+      evaluacionId: parseInt(evaluacionId),
+      respuestas,
+    };
 
-      const res = await clienteAxios.post('/evaluaciones/enviar', submitData);
-      
-      // El backend nos devuelve { puntaje, aprobado, mensaje }
-      setResultado(res.data);
-    } catch (error) {
-      console.error("Error al enviar el examen", error);
-      alert("Hubo un problema al corregir el examen.");
-    } finally {
-      setEnviando(false);
-    }
+    mutation.mutate(submitData);
   };
 
   if (cargando) return <div className="text-center mt-20 text-xl text-gray-600 font-bold">Cargando examen... ⏳</div>;
+  if (evaluacionError) return <div className="text-center mt-20 text-xl text-red-600 font-bold">No se pudo cargar el examen.</div>;
   if (!evaluacion) return <div className="text-center mt-20 text-xl text-red-600 font-bold">Examen no encontrado.</div>;
 
   // --- VISTA DE RESULTADOS (Si ya lo envió y se corrigió) ---
@@ -145,10 +145,10 @@ export const RendirEvaluacion = () => {
           <div className="sticky bottom-4 mt-8">
             <button
               type="submit"
-              disabled={enviando}
+              disabled={mutation.isLoading}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-lg py-4 rounded-xl shadow-lg transition-all disabled:bg-gray-400"
             >
-              {enviando ? 'Corrigiendo...' : 'Entregar Examen'}
+              {mutation.isLoading ? 'Corrigiendo...' : 'Entregar Examen'}
             </button>
           </div>
         </form>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useQueryClient, useMutation } from '@tanstack/react-query';
 import clienteAxios from '../api/axiosConfig';
 
 export const ModalCrearTarea = ({ moduloId, isOpen, onClose, onTareaCreada }) => {
@@ -8,8 +9,47 @@ export const ModalCrearTarea = ({ moduloId, isOpen, onClose, onTareaCreada }) =>
     fechaLimite: '', // Formato YYYY-MM-DDTHH:mm
   });
   const [archivo, setArchivo] = useState(null);
-  const [cargando, setCargando] = useState(false);
   const [mensaje, setMensaje] = useState({ tipo: '', texto: '' });
+
+  const queryClient = useQueryClient();
+
+  const crearTareaMutation = useMutation({
+    mutationFn: async (data) => {
+      const tareaRequestDTO = {
+        titulo: data.titulo,
+        descripcion: data.descripcion,
+        fechaLimite: data.fechaLimite,
+        moduloId: moduloId
+      };
+      
+      const formDataToSend = new FormData();
+      formDataToSend.append('datos', new Blob([JSON.stringify(tareaRequestDTO)], { type: "application/json" }));
+      
+      if (data.archivo) {
+        formDataToSend.append('archivo', data.archivo);
+      }
+
+      await clienteAxios.post('/tareas/crear', formDataToSend, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+    },
+    onSuccess: () => {
+      setMensaje({ tipo: 'exito', texto: '¡Tarea creada exitosamente! 📅' });
+      queryClient.invalidateQueries({ queryKey: ['tareas', moduloId] });
+      
+      setTimeout(() => {
+        onTareaCreada();
+        onClose();
+        setFormData({ titulo: '', descripcion: '', fechaLimite: '' });
+        setArchivo(null);
+        setMensaje({ tipo: '', texto: '' });
+      }, 1500);
+    },
+    onError: (error) => {
+      console.error(error);
+      setMensaje({ tipo: 'error', texto: 'Ocurrió un error al crear la tarea.' });
+    }
+  });
 
   if (!isOpen) return null;
 
@@ -23,48 +63,8 @@ export const ModalCrearTarea = ({ moduloId, isOpen, onClose, onTareaCreada }) =>
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setCargando(true);
     setMensaje({ tipo: '', texto: '' });
-
-    try {
-      // 1. Armamos el FormData porque el backend espera un Multipart (datos + archivo)
-      const data = new FormData();
-      
-      // El backend espera un DTO llamado "datos", lo mandamos como Blob JSON
-      const tareaRequestDTO = {
-        titulo: formData.titulo,
-        descripcion: formData.descripcion,
-        fechaLimite: formData.fechaLimite,
-        moduloId: moduloId
-      };
-      data.append('datos', new Blob([JSON.stringify(tareaRequestDTO)], { type: "application/json" }));
-      
-      // 2. Si el profe subió un PDF de consigna, lo adjuntamos
-      if (archivo) {
-        data.append('archivo', archivo);
-      }
-
-      // 3. Enviamos al backend
-      await clienteAxios.post('/tareas/crear', data, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-
-      setMensaje({ tipo: 'exito', texto: '¡Tarea creada exitosamente! 📅' });
-      
-      setTimeout(() => {
-        onTareaCreada(); // Función para recargar la lista de tareas en el panel
-        onClose();
-        setFormData({ titulo: '', descripcion: '', fechaLimite: '' });
-        setArchivo(null);
-        setMensaje({ tipo: '', texto: '' });
-      }, 1500);
-
-    } catch (error) {
-      console.error(error);
-      setMensaje({ tipo: 'error', texto: 'Ocurrió un error al crear la tarea.' });
-    } finally {
-      setCargando(false);
-    }
+    crearTareaMutation.mutate({ ...formData, archivo });
   };
 
   return (
@@ -142,10 +142,10 @@ export const ModalCrearTarea = ({ moduloId, isOpen, onClose, onTareaCreada }) =>
             </button>
             <button 
               type="submit" 
-              disabled={cargando}
-              className={`px-4 py-2 text-white font-bold rounded-md transition-colors ${cargando ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
+              disabled={crearTareaMutation.isPending}
+              className={`px-4 py-2 text-white font-bold rounded-md transition-colors ${crearTareaMutation.isPending ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
             >
-              {cargando ? 'Guardando...' : 'Crear Tarea'}
+              {crearTareaMutation.isPending ? 'Guardando...' : 'Crear Tarea'}
             </button>
           </div>
         </form>

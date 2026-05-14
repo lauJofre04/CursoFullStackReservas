@@ -1,120 +1,108 @@
 import { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useParams, useNavigate } from 'react-router-dom';
 import clienteAxios from '../api/axiosConfig';
 import { useAuth } from '../context/AuthContext';
 import { GestorModulos } from '../components/GestorModulos';
 import { CrearEvaluacion } from '../components/CrearEvaluacion';
+import { ForoLeccion } from '../components/ForoLeccion';
+import { LeccionSkeleton } from '../components/LeccionSkeleton';
 import { ModalCrearTarea } from '../components/ModalCrearTarea';
-import {ModalEntrega} from '../components/ModalEntrega';
+import { ModalEntrega } from '../components/ModalEntrega';
+import { ProgressCircle } from '../components/ProgressCircle';
 
 export const AulaVirtualPage = () => {
   const { cursoId } = useParams();
   const { usuario } = useAuth();
-  const [curso, setCurso] = useState(null);
-  const [modulos, setModulos] = useState([]);
   const [leccionSeleccionada, setLeccionSeleccionada] = useState(null);
   const [recursoActual, setRecursoActual] = useState(null);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState(null);
   const [sidebarAbierta, setSidebarAbierta] = useState(true);
   const [modoEdicion, setModoEdicion] = useState(false);
   const [vistaAdmin, setVistaAdmin] = useState('modulos');
   const [modalTareaAbierto, setModalTareaAbierto] = useState(false);
-  const [evaluaciones, setEvaluaciones] = useState([]);
   const [tareaSeleccionada, setTareaSeleccionada] = useState(null);
-  const [candidatosCertificados, setCandidatosCertificados] = useState([]);
   const [seleccionadosCertificados, setSeleccionadosCertificados] = useState([]);
-  const [cargandoCertificados, setCargandoCertificados] = useState(false);
   const [mensajeCertificados, setMensajeCertificados] = useState('');
   const [enviandoCertificados, setEnviandoCertificados] = useState(false);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const puedeEditar = usuario?.rol === 'ADMIN' || usuario?.rol === 'PROFESOR';
 
-  useEffect(() => {
-    cargarDatos();
-  }, [cursoId]);
+  const cursoQuery = useQuery({
+    queryKey: ['curso', cursoId],
+    queryFn: async () => {
+      const response = await clienteAxios.get(`/cursos/${cursoId}`);
+      return response.data;
+    },
+    enabled: !!cursoId,
+    staleTime: 1000 * 60 * 2,
+  });
+
+  const modulosQuery = useQuery({
+    queryKey: ['modulos', cursoId],
+    queryFn: async () => {
+      const response = await clienteAxios.get(`/modulos/curso/${cursoId}`);
+      return Array.isArray(response.data) ? response.data : [];
+    },
+    enabled: !!cursoId,
+    staleTime: 1000 * 60 * 2,
+  });
+
+  const evaluacionesQuery = useQuery({
+    queryKey: ['evaluaciones', cursoId],
+    queryFn: async () => {
+      const response = await clienteAxios.get(`/evaluaciones/curso/${cursoId}`);
+      return response.data;
+    },
+    enabled: !!cursoId,
+    staleTime: 1000 * 60 * 2,
+  });
+
+  const progresoQuery = useQuery({
+    queryKey: ['progresoCurso', cursoId],
+    queryFn: async () => {
+      const response = await clienteAxios.get(`/progreso/curso/${cursoId}`);
+      return response.data;
+    },
+    enabled: !!cursoId,
+    staleTime: 1000 * 60 * 1,
+    retry: false,
+  });
+
+  const certificadosQuery = useQuery({
+    queryKey: ['certificadosCandidatos', cursoId],
+    queryFn: async () => {
+      const response = await clienteAxios.get(`/admin/cursos/${cursoId}/certificados/candidatos`);
+      return Array.isArray(response.data) ? response.data : [];
+    },
+    enabled: vistaAdmin === 'certificados' && !!cursoId,
+    staleTime: 1000 * 60 * 1,
+    retry: false,
+  });
+
+  const curso = cursoQuery.data;
+  const modulos = modulosQuery.data || [];
+  const evaluaciones = evaluacionesQuery.data || [];
+  const error = cursoQuery.error || modulosQuery.error || evaluacionesQuery.error || progresoQuery.error;
 
   useEffect(() => {
-    if (vistaAdmin === 'certificados') {
-      cargarCandidatosCertificados();
-    }
-  }, [vistaAdmin]);
-
-  const cargarDatos = async () => {
-    try {
-      setCargando(true);
-      
-      // Cargar datos del curso
-      const cursoResponse = await clienteAxios.get(`/cursos/${cursoId}`);
-      setCurso(cursoResponse.data);
-
-      // Cargar módulos con lecciones
-      const modulosResponse = await clienteAxios.get(`/modulos/curso/${cursoId}`);
-      const modulosData = Array.isArray(modulosResponse.data) ? modulosResponse.data : [];
-      setModulos(modulosData);
-      
-      // Cargar evaluaciones del curso
-      const evalResponse = await clienteAxios.get(`/evaluaciones/curso/${cursoId}`);
-      setEvaluaciones(evalResponse.data);
-
-      // Seleccionar primera lección automáticamente
-      if (modulosData.length > 0 && modulosData[0].lecciones && modulosData[0].lecciones.length > 0) {
-        const primeraLeccion = modulosData[0].lecciones[0];
+    if (!leccionSeleccionada && modulos.length > 0) {
+      const primeraLeccion = modulos[0]?.lecciones?.[0];
+      if (primeraLeccion) {
         setLeccionSeleccionada(primeraLeccion.id);
-        
-        // Si hay recursos, seleccionar el primero
-        if (primeraLeccion.recursos && primeraLeccion.recursos.length > 0) {
-          setRecursoActual(primeraLeccion.recursos[0]);
-        }
+        setRecursoActual(primeraLeccion.recursos?.[0] || null);
       }
-
-      setError(null);
-    } catch (err) {
-      console.error('Error cargando datos:', err);
-      setError('Error al cargar el contenido del curso');
-    } finally {
-      setCargando(false);
     }
-  };
+  }, [modulos, leccionSeleccionada]);
 
-  const handleSeleccionarLeccion = async (leccionId) => {
-    try {
-      setTareaSeleccionada(null); // Deseleccionamos cualquier tarea previamente seleccionada
-      setLeccionSeleccionada(leccionId);
-
-      // Cargar la lección con sus recursos
-      const leccionResponse = await clienteAxios.get(`/lecciones/${leccionId}`);
-      const leccion = leccionResponse.data;
-
-      // Seleccionar primer recurso
-      if (leccion.recursos && leccion.recursos.length > 0) {
-        setRecursoActual(leccion.recursos[0]);
-      } else {
-        setRecursoActual(null);
-      }
-    } catch (err) {
-      console.error('Error cargando lección:', err);
-    }
+  const handleSeleccionarLeccion = (leccionId) => {
+    setTareaSeleccionada(null); // Deseleccionamos cualquier tarea previamente seleccionada
+    setLeccionSeleccionada(leccionId);
   };
 
   const handleSeleccionarTarea = (tarea) => {
     setLeccionSeleccionada(null); // Ocultamos la lección
     setTareaSeleccionada(tarea);  // Mostramos la tarea
-  };
-
-  const cargarCandidatosCertificados = async () => {
-    try {
-      setCargandoCertificados(true);
-      setMensajeCertificados('');
-      const response = await clienteAxios.get(`/admin/cursos/${cursoId}/certificados/candidatos`);
-      setCandidatosCertificados(response.data || []);
-      setSeleccionadosCertificados([]);
-    } catch (error) {
-      console.error('Error cargando candidatos de certificados:', error);
-      setMensajeCertificados('No se pudieron cargar los candidatos para certificados.');
-    } finally {
-      setCargandoCertificados(false);
-    }
   };
 
   const toggleSeleccionado = (usuarioId) => {
@@ -138,7 +126,8 @@ export const AulaVirtualPage = () => {
         usuarioIds: seleccionadosCertificados,
       });
       setMensajeCertificados('Certificados enviados correctamente.');
-      cargarCandidatosCertificados();
+      queryClient.invalidateQueries(['certificadosCandidatos', cursoId]);
+      setSeleccionadosCertificados([]);
     } catch (error) {
       console.error('Error enviando certificados:', error);
       setMensajeCertificados('Error al enviar los certificados. Intenta nuevamente.');
@@ -147,12 +136,12 @@ export const AulaVirtualPage = () => {
     }
   };
 
-  if (cargando) {
+  if (cursoQuery.isLoading || modulosQuery.isLoading || evaluacionesQuery.isLoading || progresoQuery.isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+      <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-slate-950 transition-colors duration-300">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          <p className="mt-4 text-gray-800 font-semibold">Cargando aula virtual...</p>
+          <p className="mt-4 text-gray-800 dark:text-slate-100 font-semibold">Cargando aula virtual...</p>
         </div>
       </div>
     );
@@ -160,9 +149,9 @@ export const AulaVirtualPage = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="bg-white p-8 rounded-lg shadow-lg">
-          <p className="text-red-600 font-semibold text-lg">{error}</p>
+      <div className="min-h-screen bg-gray-100 dark:bg-slate-950 flex items-center justify-center transition-colors duration-300">
+        <div className="bg-white dark:bg-slate-900 dark:border-slate-700 p-8 rounded-lg shadow-lg">
+          <p className="text-red-600 dark:text-red-300 font-semibold text-lg">{error?.message || String(error) || 'Error al cargar el contenido del curso'}</p>
         </div>
       </div>
     );
@@ -171,11 +160,11 @@ export const AulaVirtualPage = () => {
   // Si es admin y está en modo edición, mostrar el Panel de Gestión
   if (puedeEditar && modoEdicion) {
     return (
-      <div className="min-h-screen bg-gray-100 p-8">
+      <div className="min-h-screen bg-gray-100 dark:bg-slate-950 dark:text-slate-100 p-8 transition-colors duration-300">
         <div className="max-w-7xl mx-auto">
           {/* Cabecera Admin */}
           {/* Cabecera Admin */}
-          <div className="flex justify-between items-center bg-white rounded-2xl shadow-sm p-6 mb-6">
+          <div className="flex justify-between items-center bg-white dark:bg-slate-900 rounded-2xl shadow-sm p-6 mb-6">
             <h1 className="text-3xl font-bold text-gray-800">⚙️ Gestionar Contenido</h1>
             
             {/* 👈 NUEVO: Agrupamos los botones */}
@@ -255,16 +244,16 @@ export const AulaVirtualPage = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {cargandoCertificados ? (
+                      {certificadosQuery.isLoading || certificadosQuery.isFetching ? (
                         <tr>
                           <td colSpan="4" className="px-4 py-6 text-center text-gray-500">Cargando candidatos...</td>
                         </tr>
-                      ) : candidatosCertificados.length === 0 ? (
+                      ) : (certificadosQuery.data || []).length === 0 ? (
                         <tr>
                           <td colSpan="4" className="px-4 py-6 text-center text-gray-500">No hay alumnos registrados para este curso.</td>
                         </tr>
                       ) : (
-                        candidatosCertificados.map((alumno) => (
+                        (certificadosQuery.data || []).map((alumno) => (
                           <tr key={alumno.usuarioId} className="border-b border-gray-200">
                             <td className="px-4 py-4">
                               <input
@@ -319,6 +308,11 @@ export const AulaVirtualPage = () => {
         <div className="p-6 border-b border-gray-700">
           <h2 className="text-xl font-bold truncate">📚 {curso?.titulo}</h2>
           <p className="text-sm text-gray-400 mt-1">{modulos.length} módulos</p>
+        </div>
+
+        {/* Barra de Progreso Circular */}
+        <div className="px-4 pt-4">
+          <ProgressCircle porcentaje={progresoQuery.data?.porcentaje ?? 35} tamaño={120} />
         </div>
 
         <nav className="flex-1 overflow-y-auto py-4">
@@ -454,34 +448,82 @@ export const AulaVirtualPage = () => {
 
 // Componente para mostrar el contenido de la lección
 const ContenidoLeccion = ({ leccionId, recursoActual, setRecursoActual }) => {
-  const [leccion, setLeccion] = useState(null);
-  const [cargando, setCargando] = useState(true);
+  const queryClient = useQueryClient();
+  const [tabActivo, setTabActivo] = useState('foro');
+  const [nuevaNota, setNuevaNota] = useState('');
+  const [guardandoNota, setGuardandoNota] = useState(false);
+  const [errorNota, setErrorNota] = useState(null);
+  const [videoTime, setVideoTime] = useState(0);
+  const [seekTime, setSeekTime] = useState(null);
+
+  const {
+    data: leccion,
+    isLoading: cargando,
+    error: leccionError,
+  } = useQuery({
+    queryKey: ['leccion', leccionId],
+    queryFn: async () => {
+      const response = await clienteAxios.get(`/lecciones/${leccionId}`);
+      return response.data;
+    },
+    enabled: !!leccionId,
+    staleTime: 1000 * 60 * 2,
+  });
+
+  const {
+    data: apuntes = [],
+    isLoading: cargandoApuntes,
+  } = useQuery({
+    queryKey: ['apuntes', leccionId],
+    queryFn: async () => {
+      const response = await clienteAxios.get(`/apuntes/leccion/${leccionId}`);
+      return Array.isArray(response.data) ? response.data : [];
+    },
+    enabled: !!leccionId,
+    staleTime: 1000 * 60 * 2,
+  });
 
   useEffect(() => {
-    cargarLeccion();
-  }, [leccionId]);
+    if (leccion?.recursos?.length > 0) {
+      setRecursoActual(leccion.recursos[0]);
+    } else {
+      setRecursoActual(null);
+    }
+  }, [leccion, setRecursoActual]);
 
-  const cargarLeccion = async () => {
+  const handleGuardarApunte = async () => {
+    if (!nuevaNota.trim()) {
+      setErrorNota('Escribí tu apunte antes de guardarlo.');
+      return;
+    }
+
+    setErrorNota(null);
+    setGuardandoNota(true);
+
     try {
-      setCargando(true);
-      const response = await clienteAxios.get(`/lecciones/${leccionId}`);
-      setLeccion(response.data);
-
-      // Si cambió de lección y hay recursos, auto-seleccionar el primero
-      if (response.data.recursos && response.data.recursos.length > 0) {
-        setRecursoActual(response.data.recursos[0]);
-      } else {
-        setRecursoActual(null);
-      }
+      await clienteAxios.post(`/apuntes/leccion/${leccionId}`, {
+        contenido: nuevaNota.trim(),
+        tiempoReferenciaSegundos: Math.floor(videoTime || 0),
+      });
+      setNuevaNota('');
+      await queryClient.invalidateQueries(['apuntes', leccionId]);
+      setTabActivo('apuntes');
     } catch (err) {
-      console.error('Error cargando lección:', err);
+      console.error('Error guardando apunte:', err);
+      setErrorNota('No se pudo guardar tu apunte. Intentá de nuevo.');
     } finally {
-      setCargando(false);
+      setGuardandoNota(false);
     }
   };
 
+  const formatearTiempo = (segundos) => {
+    const minutos = Math.floor(segundos / 60);
+    const segundosRestantes = segundos % 60;
+    return `${String(minutos).padStart(2, '0')}:${String(segundosRestantes).padStart(2, '0')}`;
+  };
+
   if (cargando) {
-    return <div className="text-center text-gray-600 mt-10">Cargando lección...</div>;
+    return <LeccionSkeleton />;
   }
 
   if (!leccion) {
@@ -530,7 +572,12 @@ const ContenidoLeccion = ({ leccionId, recursoActual, setRecursoActual }) => {
       <div className="mb-8">
         {recursoActual ? (
           // 👇 ACÁ LE PASAMOS EL leccionId
-          <VisualizadorRecurso recurso={recursoActual} leccionId={leccionId} /> 
+          <VisualizadorRecurso
+            recurso={recursoActual}
+            leccionId={leccionId}
+            seekTime={seekTime}
+            onTimeChange={setVideoTime}
+          />
         ) : (
           <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl h-48 flex items-center justify-center">
             <p className="text-gray-500 font-medium">Esta lección aún no tiene recursos adjuntos.</p>
@@ -546,8 +593,82 @@ const ContenidoLeccion = ({ leccionId, recursoActual, setRecursoActual }) => {
         </div>
       )}
 
-      <div className="mt-8">
-         <ForoLeccion leccionId={leccionId} />
+      <div className="mt-8 bg-white rounded-3xl shadow-sm border border-gray-200">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-4 border-b border-gray-200">
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setTabActivo('foro')}
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition ${tabActivo === 'foro' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+            >
+              💬 Foro
+            </button>
+            <button
+              type="button"
+              onClick={() => setTabActivo('apuntes')}
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition ${tabActivo === 'apuntes' ? 'bg-slate-900 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+            >
+              📝 Mis Apuntes
+            </button>
+          </div>
+          <div className="text-sm text-gray-500">
+            {tabActivo === 'apuntes' ? `Tiempo actual del video: ${formatearTiempo(Math.floor(videoTime || 0))}` : 'Preguntá al profesor o compañeros sobre esta lección.'}
+          </div>
+        </div>
+
+        <div className="p-6">
+          {tabActivo === 'foro' ? (
+            <ForoLeccion leccionId={leccionId} />
+          ) : (
+            <div className="space-y-6">
+              <div className="space-y-3">
+                <label className="block text-sm font-semibold text-gray-700">Escribí tu apunte privado</label>
+                <textarea
+                  rows="4"
+                  value={nuevaNota}
+                  onChange={(e) => setNuevaNota(e.target.value)}
+                  placeholder="Anotá lo más importante y vuelve al minuto exacto luego"
+                  className="w-full rounded-3xl border border-gray-300 bg-gray-50 p-4 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 resize-none"
+                />
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <button
+                    type="button"
+                    onClick={handleGuardarApunte}
+                    disabled={guardandoNota}
+                    className={`inline-flex items-center justify-center rounded-full px-6 py-3 text-sm font-bold text-white transition ${guardandoNota ? 'bg-gray-400 cursor-not-allowed' : 'bg-slate-900 hover:bg-slate-800'}`}
+                  >
+                    {guardandoNota ? 'Guardando apunte...' : `Guardar apunte ${videoTime ? `@ ${formatearTiempo(Math.floor(videoTime))}` : ''}`}
+                  </button>
+                  <span className="text-xs text-gray-500">Estos apuntes son privados y solo los ves vos.</span>
+                </div>
+                {errorNota && <p className="text-sm text-red-600">{errorNota}</p>}
+              </div>
+
+              <div className="space-y-4">
+                {apuntes.length === 0 ? (
+                  <div className="rounded-3xl border border-dashed border-gray-300 bg-gray-50 p-6 text-center text-sm text-gray-500">
+                    No hay apuntes guardados aún. Guardá tu primera nota para volver al minuto clave.
+                  </div>
+                ) : (
+                  apuntes.map((apunte) => (
+                    <button
+                      key={apunte.id}
+                      type="button"
+                      onClick={() => setSeekTime(apunte.tiempoReferenciaSegundos ?? 0)}
+                      className="w-full rounded-3xl border border-gray-200 p-5 text-left transition hover:border-slate-900 hover:shadow-sm"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+                        <span className="text-sm font-semibold text-gray-800">{apunte.tiempoReferenciaSegundos != null ? `Ir a ${formatearTiempo(apunte.tiempoReferenciaSegundos)}` : 'Apunte guardado'}</span>
+                        <span className="text-xs text-gray-500">{new Date(apunte.fechaCreacion).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                      </div>
+                      <p className="text-sm leading-relaxed text-gray-700">{apunte.contenido}</p>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
     
@@ -648,8 +769,7 @@ const VisualizadorRecurso = ({ recurso, leccionId }) => {
 const ContenidoTarea = ({ tarea, cursoTitulo }) => {
   const { usuario } = useAuth();
   const [modalAbierto, setModalAbierto] = useState(false);
-  const [miEntrega, setMiEntrega] = useState(null);
-  const [cargandoEntrega, setCargandoEntrega] = useState(true);
+  const queryClient = useQueryClient();
 
   // Formateamos la fecha límite
   const fechaLimiteDate = new Date(tarea.fechaLimite);
@@ -661,22 +781,31 @@ const ContenidoTarea = ({ tarea, cursoTitulo }) => {
   // Comprobamos si el plazo ya venció
   const plazoVencido = new Date() > fechaLimiteDate;
 
-  // Consultar si ya hay una entrega al cargar el componente
-  useEffect(() => {
-    cargarMiEntrega();
-  }, [tarea.id]);
+  const {
+    data: miEntrega,
+    isLoading: cargandoEntrega,
+    refetch: refetchMiEntrega,
+  } = useQuery({
+    queryKey: ['miEntrega', tarea.id, usuario?.id],
+    queryFn: async () => {
+      try {
+        const alumnoId = usuario?.id || 1;
+        const response = await clienteAxios.get(`/tareas/${tarea.id}/mi-entrega?alumnoId=${alumnoId}`);
+        return response.data;
+      } catch (error) {
+        if (error.response?.status === 404) {
+          return null;
+        }
+        throw error;
+      }
+    },
+    enabled: !!tarea.id && !!usuario?.id,
+    retry: false,
+  });
 
-  const cargarMiEntrega = async () => {
-    try {
-      setCargandoEntrega(true);
-      const alumnoId = usuario?.id || 1;
-      const response = await clienteAxios.get(`/tareas/${tarea.id}/mi-entrega?alumnoId=${alumnoId}`);
-      setMiEntrega(response.data);
-    } catch (error) {
-      setMiEntrega(null);
-    } finally {
-      setCargandoEntrega(false);
-    }
+  const handleCerrarModal = () => {
+    setModalAbierto(false);
+    refetchMiEntrega();
   };
 
   return (
@@ -747,6 +876,29 @@ const ContenidoTarea = ({ tarea, cursoTitulo }) => {
                   </div>
                 )}
 
+                {(miEntrega?.nota != null || miEntrega?.feedbackDocente) && (
+                  <div className="w-full bg-slate-50 border border-slate-200 rounded-xl p-6 mb-6 text-left">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p className="text-sm uppercase tracking-wide text-slate-500 mb-1">Corrección del profesor</p>
+                        {miEntrega?.nota != null && (
+                          <p className="text-3xl font-bold text-green-700">{miEntrega.nota.toFixed(1)}</p>
+                        )}
+                      </div>
+                      {miEntrega?.feedbackDocente && (
+                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-600 bg-slate-100 px-3 py-2 rounded-full">
+                          Feedback disponible
+                        </span>
+                      )}
+                    </div>
+                    {miEntrega?.feedbackDocente && (
+                      <div className="mt-4 text-gray-700 whitespace-pre-wrap">
+                        {miEntrega.feedbackDocente}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {plazoVencido ? (
                   <div className="px-6 py-3 bg-red-100 text-red-700 font-bold rounded-xl flex items-center gap-2">
                     <span>⏳</span> El plazo para esta entrega ha finalizado
@@ -773,10 +925,7 @@ const ContenidoTarea = ({ tarea, cursoTitulo }) => {
 
       <ModalEntrega 
         isOpen={modalAbierto} 
-        onClose={() => {
-          setModalAbierto(false);
-          cargarMiEntrega();
-        }} 
+        onClose={handleCerrarModal} 
         tarea={{ ...tarea, cursoTitulo }}
       />
     </div>

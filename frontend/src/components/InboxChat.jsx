@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client/dist/sockjs.js';
 import clienteAxios from '../api/axiosConfig';
@@ -6,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 
 export const InboxChat = ({ compact = false, onTotalUnreadChange }) => {
   const { usuario } = useAuth();
+  const queryClient = useQueryClient();
   const [conversaciones, setConversaciones] = useState([]);
   const [seleccion, setSeleccion] = useState(null);
   const [mensajes, setMensajes] = useState([]);
@@ -33,6 +35,46 @@ export const InboxChat = ({ compact = false, onTotalUnreadChange }) => {
     seleccionRef.current = seleccion;
   }, [seleccion]);
 
+  const {
+    data: conversacionesData = [],
+    refetch: refetchConversaciones,
+  } = useQuery({
+    queryKey: ['conversaciones', usuario?.id],
+    queryFn: async () => {
+      const response = await clienteAxios.get('/chat/conversaciones');
+      return response.data || [];
+    },
+    enabled: !!usuario?.id,
+    staleTime: 1000 * 60 * 2,
+    refetchOnWindowFocus: false,
+  });
+
+  const {
+    data: mensajesData = [],
+    refetch: refetchMensajes,
+    isFetching: cargandoMensajes,
+  } = useQuery({
+    queryKey: ['mensajes', seleccion?.id],
+    queryFn: async () => {
+      if (!seleccion?.id) return [];
+      const response = await clienteAxios.get(`/chat/conversaciones/${seleccion.id}/mensajes`);
+      return response.data || [];
+    },
+    enabled: !!seleccion?.id,
+    staleTime: 1000 * 60 * 2,
+    refetchOnWindowFocus: false,
+    retry: false,
+  });
+
+  useEffect(() => {
+    setConversaciones(conversacionesData);
+    actualizarTotalNoLeidos(conversacionesData);
+  }, [conversacionesData]);
+
+  useEffect(() => {
+    setMensajes(mensajesData);
+  }, [mensajesData]);
+
   useEffect(() => {
     if (!usuario) {
       return;
@@ -49,14 +91,14 @@ export const InboxChat = ({ compact = false, onTotalUnreadChange }) => {
       reconnectDelay: 5000,
       onConnect: () => {
         setConectado(true);
-        cargarConversaciones();
+        refetchConversaciones();
         userSubscriptionRef.current = client.subscribe(
           `/topic/user.${usuario.id}`,
           (message) => {
             try {
               const payload = JSON.parse(message.body);
-              setConversaciones((prev) => {
-                const updated = prev.map((c) =>
+              queryClient.setQueryData(['conversaciones', usuario?.id], (old = []) => {
+                const updated = old.map((c) =>
                   c.id === payload.conversacionId
                     ? {
                         ...c,
@@ -108,8 +150,9 @@ export const InboxChat = ({ compact = false, onTotalUnreadChange }) => {
         try {
           const contenido = JSON.parse(message.body);
           setMensajes((prev) => [...prev, contenido]);
-          setConversaciones((prev) =>
-            prev.map((c) =>
+          queryClient.setQueryData(['mensajes', seleccion.id], (old = []) => [...old, contenido]);
+          queryClient.setQueryData(['conversaciones', usuario?.id], (old = []) =>
+            old.map((c) =>
               c.id === contenido.conversacionId
                 ? { ...c, ultimoMensaje: contenido.contenido }
                 : c,
@@ -141,29 +184,22 @@ export const InboxChat = ({ compact = false, onTotalUnreadChange }) => {
 
   const cargarConversaciones = async () => {
     try {
-      const response = await clienteAxios.get('/chat/conversaciones');
-      const conversacionesData = response.data || [];
-      setConversaciones(conversacionesData);
-      actualizarTotalNoLeidos(conversacionesData);
+      await refetchConversaciones();
+      setError(null);
     } catch (error) {
       console.error(error);
       setError('No se pudieron cargar las conversaciones');
     }
   };
 
-  const cargarMensajes = async (conversacion) => {
+  const cargarMensajes = (conversacion) => {
     if (!conversacion) {
       return;
     }
 
-    try {
-      const response = await clienteAxios.get(`/chat/conversaciones/${conversacion.id}/mensajes`);
-      setMensajes(response.data || []);
-      setSeleccion(conversacion);
-      await cargarConversaciones();
-    } catch (error) {
-      console.error(error);
-      setError('No se pudieron cargar los mensajes');
+    setSeleccion(conversacion);
+    if (refetchMensajes) {
+      refetchMensajes();
     }
   };
 
@@ -205,8 +241,8 @@ export const InboxChat = ({ compact = false, onTotalUnreadChange }) => {
         nombre: nombreChat || 'Chat privado',
       });
 
-      setConversaciones((prev) => {
-        const updated = [response.data, ...prev];
+      queryClient.setQueryData(['conversaciones', usuario?.id], (old = []) => {
+        const updated = [response.data, ...old];
         actualizarTotalNoLeidos(updated);
         return updated;
       });
@@ -246,14 +282,14 @@ export const InboxChat = ({ compact = false, onTotalUnreadChange }) => {
         </select>
         <button
           onClick={() => setMostrarNuevoChat((prev) => !prev)}
-          className="rounded-2xl border border-slate-300 bg-slate-50 px-3 py-2 text-lg font-bold text-slate-700 hover:bg-slate-100"
+          className="rounded-2xl border border-slate-300 bg-slate-50 dark:bg-slate-800 dark:border-slate-700 px-3 py-2 text-lg font-bold text-slate-700 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700"
         >
           +
         </button>
       </div>
 
       {mostrarNuevoChat && (
-        <form onSubmit={crearConversacion} className="space-y-2 rounded-2xl border border-slate-200 bg-slate-50 p-3 flex-shrink-0">
+        <form onSubmit={crearConversacion} className="space-y-2 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-3 flex-shrink-0">
           <input
             value={emailDestino}
             onChange={(e) => setEmailDestino(e.target.value)}
@@ -267,7 +303,7 @@ export const InboxChat = ({ compact = false, onTotalUnreadChange }) => {
       )}
 
       {/* Área de mensajes */}
-      <div className="flex-1 overflow-y-auto bg-white rounded-2xl border border-slate-200 p-3 min-h-0 flex flex-col justify-end gap-2">
+      <div className="flex-1 overflow-y-auto bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-3 min-h-0 flex flex-col justify-end gap-2">
         {!seleccion ? (
           <p className="text-xs text-slate-500">Selecciona una conversación</p>
         ) : mensajes.length === 0 ? (
@@ -314,7 +350,7 @@ export const InboxChat = ({ compact = false, onTotalUnreadChange }) => {
           <button
             type="button"
             onClick={() => setMostrarNuevoChat((prev) => !prev)}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-300 bg-slate-50 text-xl font-bold text-slate-700 transition hover:bg-slate-100"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-300 bg-slate-50 dark:bg-slate-800 text-xl font-bold text-slate-700 dark:text-slate-100 transition hover:bg-slate-100 dark:hover:bg-slate-700"
             aria-label="Crear nueva conversación"
           >
             +
@@ -360,11 +396,11 @@ export const InboxChat = ({ compact = false, onTotalUnreadChange }) => {
                 type="button"
                 onClick={() => cargarMensajes(conversacion)}
                 className={`w-full rounded-3xl p-4 text-left transition ${
-                  seleccion?.id === conversacion.id ? 'border border-blue-500 bg-blue-50 shadow-sm' : 'border border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
+                  seleccion?.id === conversacion.id ? 'border border-blue-500 bg-blue-50 shadow-sm' : 'border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 hover:border-slate-300 dark:hover:border-slate-600 hover:shadow-sm'
                 }`}
               >
                 <div className="flex items-center justify-between gap-3">
-                  <p className="font-semibold text-slate-900 truncate">{conversacion.nombre}</p>
+                  <p className="font-semibold text-slate-900 dark:text-slate-100 truncate">{conversacion.nombre}</p>
                   <div className="flex items-center gap-2">
                     {conversacion.mensajesNoLeidos > 0 && (
                       <span className="inline-flex min-w-[2rem] items-center justify-center rounded-full bg-red-600 px-2 py-1 text-xs font-semibold text-white">
@@ -405,7 +441,7 @@ export const InboxChat = ({ compact = false, onTotalUnreadChange }) => {
             return (
               <div
                 key={mensaje.id || `${mensaje.remitenteId}-${mensaje.fechaEnvio}`}
-                className={`max-w-[85%] rounded-3xl p-4 ${esPropio ? 'bg-blue-600 text-white ml-auto' : 'bg-slate-100 text-slate-900'}`}
+                className={`max-w-[85%] rounded-3xl p-4 ${esPropio ? 'bg-blue-600 text-white ml-auto' : 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100'}`}
               >
                 <div className={`text-xs mb-2 ${esPropio ? 'text-white/80' : 'text-slate-500'}`}>
                   <span className="font-semibold">{mensaje.remitenteNombre}</span> · {formatearHora(mensaje.fechaEnvio)}

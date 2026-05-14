@@ -26,9 +26,10 @@ function App() {
   return (
     <BrowserRouter>
       <Navbar />
-      <Routes>
-        <Route path="/" element={<Navigate to="/home" replace />} />
-        <Route path="/home" element={<HomePage />} />
+      <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300">
+        <Routes>
+          <Route path="/" element={<Navigate to="/home" replace />} />
+          <Route path="/home" element={<HomePage />} />
         <Route path="/curso/:id" element={<CursoDetallePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
@@ -87,7 +88,8 @@ function App() {
         <Route path="/pago/error" element={<PagoErrorPage />} />
         <Route path="/pago/pendiente" element={<PagoPendientePage />} />
         <Route path="/mi-calendario" element={<CalendarioPage />} />
-      </Routes>
+        </Routes>
+      </div>
       <ChatLauncher />
     </BrowserRouter>
   );
