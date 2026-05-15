@@ -1,34 +1,34 @@
 name: DevCursos Backend CI
 
-# ¿Cuándo queremos que se ejecute esto?
 on:
   push:
-    branches: [ "main", "master" ] # Cuando hacemos push a la rama principal
+    branches: [ "main", "master" ]
   pull_request:
-    branches: [ "main", "master" ] # O cuando alguien hace un PR
+    branches: [ "main", "master" ]
 
 jobs:
   test:
     name: Compilar y Ejecutar Tests
-    runs-on: ubuntu-latest # Levantamos una máquina virtual con Linux
+    runs-on: ubuntu-latest
+
+    # 👇 ESTA ES LA CLAVE: Le decimos al robot que entre a la carpeta del backend
+    defaults:
+      run:
+        working-directory: ./reservation-backend
 
     steps:
-    # 1. Clonar el repositorio en la máquina virtual
     - name: Descargar el código
       uses: actions/checkout@v4
 
-    # 2. Instalar Java (Asegurate de que la versión coincida con la de tu pom.xml, ej: 17 o 21)
     - name: Configurar Java JDK
       uses: actions/setup-java@v4
       with:
         java-version: '17' 
         distribution: 'temurin'
-        cache: 'maven' # Esto hace que las dependencias bajen rapidísimo la segunda vez
+        cache: 'maven'
 
-    # 3. Por temas de Linux, le damos permiso de ejecución a tu archivito mvnw
     - name: Dar permisos al Maven Wrapper
       run: chmod +x mvnw
 
-    # 4. ¡El comando mágico que nos dio la victoria hoy!
     - name: Ejecutar Tests
       run: ./mvnw test
