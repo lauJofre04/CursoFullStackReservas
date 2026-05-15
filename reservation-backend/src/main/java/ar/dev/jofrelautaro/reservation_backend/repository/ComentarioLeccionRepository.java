@@ -1,6 +1,8 @@
 package ar.dev.jofrelautaro.reservation_backend.repository;
 
 import ar.dev.jofrelautaro.reservation_backend.model.entity.ComentarioLeccion;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -12,5 +14,7 @@ public interface ComentarioLeccionRepository extends JpaRepository<ComentarioLec
     // Spring Data JPA arma la consulta SQL automáticamente leyendo el nombre del método:
     // Trae los comentarios filtrados por el ID de la lección y ordenados del más viejo al más nuevo.
     List<ComentarioLeccion> findByLeccionIdOrderByFechaCreacionAsc(Long leccionId);
-    
+
+    // Paginación para el historial de foro (mejor escalabilidad con 5k+ mensajes)
+    Page<ComentarioLeccion> findByLeccionIdOrderByFechaCreacionAsc(Long leccionId, Pageable pageable);
 }

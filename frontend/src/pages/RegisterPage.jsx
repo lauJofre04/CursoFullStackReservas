@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import clienteAxios from '../api/axiosConfig'; 
 
 export const RegisterPage = () => {
@@ -27,12 +28,14 @@ export const RegisterPage = () => {
       const token = response.data.token;
       localStorage.setItem('token', token);
 
-      alert("¡Cuenta creada con éxito!");
-      navigate('/panel');
+      toast.success('¡Cuenta creada con éxito! Redirigiendo...');
+      setTimeout(() => navigate('/panel'), 500);
 
     } catch (err) {
       console.error(err);
-      setError('Ocurrió un error al crear la cuenta. Verifica los datos.');
+      const errorMsg = err.response?.data?.mensaje || 'Ocurrió un error al crear la cuenta. Verifica los datos.';
+      toast.error(errorMsg);
+      setError(errorMsg);
     }
   };
 

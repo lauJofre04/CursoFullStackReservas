@@ -25,6 +25,8 @@ export const PanelPage = () => {
   const { usuario } = useAuth();
   const formularioCursoRef = useRef();
 
+  const [sidebarAbierta, setSidebarAbierta] = useState(false);
+
   // Estados globales
   const [seccionActiva, setSeccionActiva] = useState('matricular');
 
@@ -80,6 +82,12 @@ export const PanelPage = () => {
     enabled: !!usuario?.id,
     staleTime: 1000 * 60 * 5,
   });
+
+  useEffect(() => {
+    if (window.innerWidth >= 768) {
+      setSidebarAbierta(true);
+    }
+  }, []);
 
   useEffect(() => {
     if (!perfilUsuario) return;
@@ -218,8 +226,8 @@ export const PanelPage = () => {
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300">
       {/* SIDEBAR */}
-      <div className="flex h-screen">
-        <aside className="w-64 bg-white dark:bg-slate-900 dark:border-slate-700 shadow-lg p-6 flex flex-col">
+      <div className="flex min-h-screen flex-col md:flex-row">
+        <aside className={`fixed inset-y-0 left-0 z-40 transform transition-transform duration-300 bg-white dark:bg-slate-900 dark:border-slate-700 shadow-lg p-6 flex flex-col w-72 md:relative md:translate-x-0 ${sidebarAbierta ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
           <div className="mb-8">
             <h2 className="text-xl font-bold text-gray-800">Hola {usuario?.nombre || 'Admin'}</h2>
           </div>
@@ -289,8 +297,24 @@ export const PanelPage = () => {
           </button>
         </aside>
 
+        {sidebarAbierta && (
+          <div
+            className="fixed inset-0 z-30 bg-black/40 md:hidden"
+            onClick={() => setSidebarAbierta(false)}
+          />
+        )}
+
         {/* CONTENIDO PRINCIPAL */}
-        <main className="flex-1 overflow-auto p-8">
+        <main className="flex-1 overflow-auto p-4 sm:p-8">
+          <div className="flex items-center justify-between gap-4 mb-6 md:hidden">
+            <button
+              onClick={() => setSidebarAbierta(true)}
+              className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+            >
+              ☰ Menú
+            </button>
+            <h1 className="text-lg font-bold text-gray-900 dark:text-slate-100">Panel de Administración</h1>
+          </div>
           <div className={`max-w-4xl mx-auto ${seccionActiva === 'estadisticas' ? 'max-w-6xl' : ''}`}>
             
             {/* Matricular Usuarios */}

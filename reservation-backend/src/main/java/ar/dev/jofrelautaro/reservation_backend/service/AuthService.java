@@ -7,6 +7,7 @@ import ar.dev.jofrelautaro.reservation_backend.model.entity.Rol;
 import ar.dev.jofrelautaro.reservation_backend.model.entity.TokenRecuperacion;
 import ar.dev.jofrelautaro.reservation_backend.model.entity.TokenVerificacion;
 import ar.dev.jofrelautaro.reservation_backend.model.entity.Usuario;
+import ar.dev.jofrelautaro.reservation_backend.exception.BusinessRuleViolationException;
 import ar.dev.jofrelautaro.reservation_backend.repository.TokenRecuperacionRepository;
 import ar.dev.jofrelautaro.reservation_backend.repository.TokenVerificacionRepository;
 import ar.dev.jofrelautaro.reservation_backend.repository.UsuarioRepository;
@@ -16,8 +17,10 @@ import lombok.RequiredArgsConstructor;
 import java.util.Collections;
 import java.util.Optional;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -39,6 +42,10 @@ public class AuthService {
     private final TokenVerificacionRepository tokenVerificacionRepository;
 
     public AuthResponse register(RegisterRequest request) {
+        if (repository.findByEmail(request.getEmail()).isPresent()) {
+            throw new BusinessRuleViolationException("Ya existe un usuario con ese correo.", HttpStatus.CONFLICT);
+        }
+
         // 1. Creamos el usuario asegurándonos de que nazca bloqueado
         Usuario user = Usuario.builder()
                 .nombre(request.getNombre())
@@ -80,21 +87,25 @@ public class AuthService {
     public AuthResponse login(LoginRequest request) {
         // 1. Buscamos al usuario primero para ver si existe (antes de que Spring verifique la clave)
         var user = repository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("Credenciales incorrectas"));
+                .orElseThrow(() -> new BusinessRuleViolationException("Credenciales incorrectas", HttpStatus.UNAUTHORIZED));
 
         // 2. EL CANDADO: Si no verificó el mail, lo rebotamos acá mismo
         // Usamos Boolean.TRUE.equals para evitar NullPointerExceptions con usuarios viejos
         if (!Boolean.TRUE.equals(user.getEmailVerificado())) {
-            throw new RuntimeException("Tenés que verificar tu correo electrónico antes de iniciar sesión. Revisá tu bandeja de entrada.");
+            throw new BusinessRuleViolationException("Tenés que verificar tu correo electrónico antes de iniciar sesión. Revisá tu bandeja de entrada.", HttpStatus.FORBIDDEN);
         }
 
         // 3. Si está verificado, dejamos que Spring Security valide la contraseña
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getEmail(),
-                        request.getPassword()
-                )
-        );
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            request.getEmail(),
+                            request.getPassword()
+                    )
+            );
+        } catch (AuthenticationException ex) {
+            throw new BusinessRuleViolationException("Credenciales incorrectas", HttpStatus.UNAUTHORIZED);
+        }
         
         // 4. Si la contraseña es correcta, le damos su pase VIP
         var jwtToken = jwtService.generateToken(user);

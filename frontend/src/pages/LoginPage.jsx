@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 import clienteAxios from '../api/axiosConfig'; 
 import { useAuth } from '../context/AuthContext'; 
 import { GoogleLogin } from '@react-oauth/google';// 1. Importamos el contexto
@@ -22,12 +23,14 @@ export const LoginPage = () => {
     },
     onSuccess: (token) => {
       login(token);
-      alert("¡Login exitoso! Ya tenés tu pase VIP.");
+      toast.success('¡Login exitoso! Ya tenés tu pase VIP.');
       navigate('/');
     },
     onError: (error) => {
       console.error(error);
-      setError('Credenciales incorrectas. Por favor, intenta de nuevo.');
+      const errorMsg = error.response?.data?.mensaje || 'Credenciales incorrectas. Por favor, intenta de nuevo.';
+      toast.error(errorMsg);
+      setError(errorMsg);
     }
   });
 

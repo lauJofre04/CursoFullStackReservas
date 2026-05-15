@@ -16,7 +16,7 @@ export const AulaVirtualPage = () => {
   const { usuario } = useAuth();
   const [leccionSeleccionada, setLeccionSeleccionada] = useState(null);
   const [recursoActual, setRecursoActual] = useState(null);
-  const [sidebarAbierta, setSidebarAbierta] = useState(true);
+  const [sidebarAbierta, setSidebarAbierta] = useState(false);
   const [modoEdicion, setModoEdicion] = useState(false);
   const [vistaAdmin, setVistaAdmin] = useState('modulos');
   const [modalTareaAbierto, setModalTareaAbierto] = useState(false);
@@ -86,6 +86,12 @@ export const AulaVirtualPage = () => {
   const error = cursoQuery.error || modulosQuery.error || evaluacionesQuery.error || progresoQuery.error;
 
   useEffect(() => {
+    if (window.innerWidth >= 768) {
+      setSidebarAbierta(true);
+    }
+  }, []);
+
+  useEffect(() => {
     if (!leccionSeleccionada && modulos.length > 0) {
       const primeraLeccion = modulos[0]?.lecciones?.[0];
       if (primeraLeccion) {
@@ -98,11 +104,13 @@ export const AulaVirtualPage = () => {
   const handleSeleccionarLeccion = (leccionId) => {
     setTareaSeleccionada(null); // Deseleccionamos cualquier tarea previamente seleccionada
     setLeccionSeleccionada(leccionId);
+    if (window.innerWidth < 768) setSidebarAbierta(false);
   };
 
   const handleSeleccionarTarea = (tarea) => {
     setLeccionSeleccionada(null); // Ocultamos la lección
     setTareaSeleccionada(tarea);  // Mostramos la tarea
+    if (window.innerWidth < 768) setSidebarAbierta(false);
   };
 
   const toggleSeleccionado = (usuarioId) => {
@@ -298,16 +306,24 @@ export const AulaVirtualPage = () => {
   }
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex min-h-screen flex-col md:flex-row bg-gray-100">
       {/* BARRA LATERAL - NAVEGACIÓN DE MÓDULOS */}
       <aside
-        className={`${
-          sidebarAbierta ? 'w-80' : 'w-0'
-        } overflow-x-hidden bg-gray-900 text-white transition-all duration-300 shadow-xl flex flex-col shrink-0`}
+        className={`fixed inset-y-0 left-0 z-40 transform transition-transform duration-300 bg-gray-900 text-white shadow-xl flex flex-col shrink-0 overflow-hidden md:relative md:translate-x-0 ${
+          sidebarAbierta ? 'translate-x-0 w-80' : '-translate-x-full w-72 md:w-80'
+        }`}
       >
-        <div className="p-6 border-b border-gray-700">
-          <h2 className="text-xl font-bold truncate">📚 {curso?.titulo}</h2>
-          <p className="text-sm text-gray-400 mt-1">{modulos.length} módulos</p>
+        <div className="flex items-center justify-between gap-4 p-6 border-b border-gray-700">
+          <div>
+            <h2 className="text-xl font-bold truncate">📚 {curso?.titulo}</h2>
+            <p className="text-sm text-gray-400 mt-1">{modulos.length} módulos</p>
+          </div>
+          <button
+            onClick={() => setSidebarAbierta(false)}
+            className="md:hidden rounded-full bg-white/10 px-3 py-2 text-sm text-gray-200 hover:bg-white/20 transition"
+          >
+            Cerrar
+          </button>
         </div>
 
         {/* Barra de Progreso Circular */}
@@ -401,8 +417,15 @@ export const AulaVirtualPage = () => {
         </div>
       </aside>
 
+      {sidebarAbierta && (
+        <div
+          className="md:hidden fixed inset-0 z-30 bg-black/40"
+          onClick={() => setSidebarAbierta(false)}
+        />
+      )}
+
       {/* ÁREA PRINCIPAL - CONTENIDO */}
-      <main className="flex-1 overflow-y-auto bg-white">
+      <main className="flex-1 overflow-y-auto bg-white min-h-screen">
         <div className="sticky top-0 bg-white border-b border-gray-200 shadow-sm p-4 flex items-center justify-between gap-4 z-10">
           <div className="flex items-center gap-4">
             {!sidebarAbierta && (
@@ -430,7 +453,7 @@ export const AulaVirtualPage = () => {
           )}
         </div>
 
-        <div className="p-8">
+        <div className="p-6 sm:p-8">
           {leccionSeleccionada ? (
             <ContenidoLeccion leccionId={leccionSeleccionada} recursoActual={recursoActual} setRecursoActual={setRecursoActual} />
           ) : tareaSeleccionada ? (
@@ -531,7 +554,7 @@ const ContenidoLeccion = ({ leccionId, recursoActual, setRecursoActual }) => {
   }
 
   return (
-    <div className="max-w-5xl mx-auto pb-12">
+    <div className="max-w-5xl mx-auto pb-12 px-4 sm:px-6">
       {/* ENCABEZADO DE LA LECCIÓN */}
       <div className="mb-6 border-b border-gray-200 pb-4">
         <h1 className="text-3xl font-extrabold text-gray-900 mb-2">📖 {leccion.titulo}</h1>
@@ -809,7 +832,7 @@ const ContenidoTarea = ({ tarea, cursoTitulo }) => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto pb-12">
+    <div className="max-w-4xl mx-auto pb-12 px-4 sm:px-6">
       <div className="bg-white rounded-2xl shadow-sm border border-purple-100 overflow-hidden">
         
         {/* Encabezado morado */}

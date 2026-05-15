@@ -39,7 +39,7 @@ export const MisCursosPage = () => {
   if (error) return <div className="text-center mt-20 text-xl font-bold text-red-600">Hubo un error al cargar tus cursos ❌</div>;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-950 dark:text-slate-100 p-8 transition-colors duration-300">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-950 dark:text-slate-100 px-4 py-8 sm:px-6 sm:py-10 transition-colors duration-300">
       <div className="max-w-7xl mx-auto">
         
         <h1 className="text-4xl font-extrabold text-gray-900 dark:text-slate-100 mb-2">Mis Cursos</h1>

@@ -1,5 +1,6 @@
 package ar.dev.jofrelautaro.reservation_backend.service;
 
+import ar.dev.jofrelautaro.reservation_backend.exception.BusinessRuleViolationException;
 import ar.dev.jofrelautaro.reservation_backend.model.dto.CursoRequest;
 import ar.dev.jofrelautaro.reservation_backend.model.dto.CursoResponseDTO;
 import ar.dev.jofrelautaro.reservation_backend.model.entity.Usuario;
@@ -8,6 +9,7 @@ import ar.dev.jofrelautaro.reservation_backend.model.entity.Rol;
 import ar.dev.jofrelautaro.reservation_backend.repository.CursoRepository;
 import ar.dev.jofrelautaro.reservation_backend.repository.UsuarioRepository;
 import jakarta.transaction.Transactional;
+import org.springframework.http.HttpStatus;
 
 import org.springframework.security.core.context.SecurityContextHolder;
 import lombok.RequiredArgsConstructor;
@@ -108,7 +110,7 @@ public class CursoService {
     // R - Leer (Uno solo)
     public Curso obtenerCursoPorId(Long id) {
         return cursoRepository.findByIdAndActivoTrue(id)
-                .orElseThrow(() -> new RuntimeException("Curso no encontrado o ha sido eliminado"));
+                .orElseThrow(() -> new BusinessRuleViolationException("Curso no encontrado o ha sido eliminado", HttpStatus.NOT_FOUND));
     }
     // Asegurate de importar CursoResponseDTO y java.util.stream.Collectors
 

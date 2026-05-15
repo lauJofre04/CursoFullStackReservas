@@ -1,11 +1,16 @@
-﻿import { useState } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import clienteAxios from '../api/axiosConfig';
 
+const PAGE_SIZE = 6;
+
 export const HomePage = () => {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedDifficulty, setSelectedDifficulty] = useState('');
+  const [cursos, setCursos] = useState([]);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
 
   const getBadgeLabel = (curso) => {
     return curso.categoria || curso.nivel || curso.tipo || curso.cursoNivel || 'General';
@@ -25,14 +30,24 @@ export const HomePage = () => {
 
   const nivelesDisponibles = ['Principiante', 'Intermedio', 'Avanzado'];
 
-  const { data: cursos = [], isLoading: cargando, error } = useQuery({
-    queryKey: ['cursosDisponibles'],
+  const { isLoading: cargando, error, isFetching } = useQuery({
+    queryKey: ['cursosDisponibles', page],
     queryFn: async () => {
-      const res = await clienteAxios.get('cursos');
-      return res.data?.content || res.data || [];
+      const res = await clienteAxios.get(`cursos?page=${page}&size=${PAGE_SIZE}`);
+      return res.data;
     },
-    staleTime: 1000 * 60 * 2,
+    keepPreviousData: true,
+    onSuccess: (data) => {
+      const nuevos = data?.content || [];
+      setCursos((prevCursos) => (page === 0 ? nuevos : [...prevCursos, ...nuevos]));
+      setHasMore(!data.last);
+    },
   });
+
+  useEffect(() => {
+    if (!selectedCategory && !selectedDifficulty) return;
+    setPage(0);
+  }, [selectedCategory, selectedDifficulty]);
 
   const categoriasUnicas = Array.from(new Set(cursos.map(getBadgeLabel))).filter(Boolean).sort();
   const cursosFiltrados = cursos.filter((curso) => {
@@ -44,26 +59,27 @@ export const HomePage = () => {
     );
   });
 
-  if (cargando) return <div className="text-center mt-20 text-xl font-bold text-gray-600 dark:text-slate-300">Cargando cursos... ⏳</div>;
+  if (cargando && cursos.length === 0) return <div className="text-center mt-20 text-xl font-bold text-gray-600 dark:text-slate-300">Cargando cursos... ⏳</div>;
   if (error) return <div className="text-center mt-20 text-xl font-bold text-red-600">Hubo un error al cargar la vidriera ❌</div>;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-950 p-8 transition-colors duration-300">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-950 px-4 py-8 sm:px-6 sm:py-10 transition-colors duration-300">
       <div className="max-w-7xl mx-auto">
         <h1 className="text-4xl font-extrabold text-gray-900 dark:text-slate-100 mb-6 text-center">
           Nuestros Cursos Disponibles
         </h1>
 
         <div className="mb-8 space-y-4">
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            <span className="text-sm font-bold text-slate-600 dark:text-slate-300">Categoría:</span>
-            <button
-              type="button"
-              onClick={() => setSelectedCategory('')}
-              className={`rounded-full px-4 py-2 text-sm font-semibold transition ${selectedCategory === '' ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
-            >
-              Todas
-            </button>
+          <div className="overflow-x-auto py-1">
+            <div className="inline-flex flex-wrap items-center gap-3 min-w-full">
+              <span className="text-sm font-bold text-slate-600 dark:text-slate-300">Categoría:</span>
+              <button
+                type="button"
+                onClick={() => setSelectedCategory('')}
+                className={`rounded-full px-4 py-2 text-sm font-semibold transition ${selectedCategory === '' ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
+              >
+                Todas
+              </button>
             {categoriasUnicas.map((categoria) => (
               <button
                 key={categoria}
@@ -144,7 +160,7 @@ export const HomePage = () => {
 
                       <Link
                         to={`/curso/${curso.id}`}
-                        className="inline-flex justify-center rounded-xl bg-blue-600 text-white px-4 py-3 font-semibold hover:bg-blue-700 transition-colors shadow-sm shadow-blue-500/10"
+                        className="w-full sm:w-auto inline-flex justify-center rounded-xl bg-blue-600 text-white px-4 py-3 font-semibold hover:bg-blue-700 transition-colors shadow-sm shadow-blue-500/10"
                       >
                         Ver más
                       </Link>
@@ -159,6 +175,19 @@ export const HomePage = () => {
             </div>
           )}
         </div>
+
+        {hasMore && (
+          <div className="mt-10 text-center">
+            <button
+              type="button"
+              onClick={() => setPage((prev) => prev + 1)}
+              disabled={isFetching}
+              className="w-full max-w-xs mx-auto inline-flex items-center justify-center rounded-full bg-blue-600 text-white px-6 py-3 font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isFetching ? 'Cargando más...' : 'Cargar más cursos'}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

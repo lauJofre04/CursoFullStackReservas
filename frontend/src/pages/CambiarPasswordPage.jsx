@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 import clienteAxios from '../api/axiosConfig';
 
 export const CambiarPasswordPage = () => {
@@ -18,16 +19,15 @@ export const CambiarPasswordPage = () => {
       return response.data.mensaje;
     },
     onSuccess: (mensajeExito) => {
-      setMensaje({ tipo: 'exito', texto: mensajeExito });
-      
-      // Magia: Lo mandamos al login a los 3 segundos
+      toast.success(mensajeExito);
+      // Magia: Lo mandamos al login a los 2 segundos
       setTimeout(() => {
         navigate('/login');
-      }, 3000);
+      }, 2000);
     },
     onError: (error) => {
       const msj = error.response?.data?.mensaje || 'Error al cambiar la contraseña. El link puede estar vencido.';
-      setMensaje({ tipo: 'error', texto: msj });
+      toast.error(msj);
     }
   });
 
@@ -54,11 +54,7 @@ export const CambiarPasswordPage = () => {
           <p className="mt-2 text-sm text-gray-600 dark:text-slate-300">Escribí tu nueva contraseña para ingresar.</p>
         </div>
 
-        {mensaje && (
-          <div className={`p-4 rounded-lg font-bold text-center ${mensaje.tipo === 'exito' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-            {mensaje.texto}
-          </div>
-        )}
+
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="relative">

@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { PanelPage } from './pages/PanelPage';
@@ -91,6 +92,7 @@ function App() {
         </Routes>
       </div>
       <ChatLauncher />
+      <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
     </BrowserRouter>
   );
 }

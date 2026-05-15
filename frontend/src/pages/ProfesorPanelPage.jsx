@@ -50,14 +50,14 @@ export const ProfesorPanelPage = () => {
       {/* Header */}
       <div className="bg-white dark:bg-slate-900 shadow-sm dark:border-slate-700 border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-6 gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">Panel del Profesor</h1>
-              <p className="text-gray-600 dark:text-slate-400 mt-1">Bienvenido, {usuario?.nombre}</p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-slate-100">Panel del Profesor</h1>
+              <p className="text-gray-600 dark:text-slate-400 mt-1 text-sm">Bienvenido, {usuario?.nombre}</p>
             </div>
             <button
               onClick={handleLogout}
-              className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+              className="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
             >
               Cerrar Sesión
             </button>
@@ -65,8 +65,8 @@ export const ProfesorPanelPage = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
           {/* Lista de Cursos */}
           <div className="bg-white dark:bg-slate-900 rounded-lg shadow-sm dark:shadow-none dark:border dark:border-slate-700 p-6">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-slate-100 mb-4">Mis Cursos</h2>

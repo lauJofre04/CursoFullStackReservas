@@ -36,7 +36,8 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         
                         .requestMatchers("/api/auth/**", "/api/auth/google").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET,"/api/cursos", "/api/cursos/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/cursos", "/api/cursos/**").permitAll()
+                        .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/v3/api-docs").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/ws-chat/**", "/api/ws-chat").permitAll()
                         .anyRequest().authenticated()

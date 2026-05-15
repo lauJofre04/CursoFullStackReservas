@@ -8,6 +8,8 @@ import ar.dev.jofrelautaro.reservation_backend.repository.ComentarioLeccionRepos
 import ar.dev.jofrelautaro.reservation_backend.repository.LeccionRepository;
 import ar.dev.jofrelautaro.reservation_backend.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -18,8 +20,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.security.Principal;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequiredArgsConstructor
@@ -32,11 +32,10 @@ public class ForoController {
 
     // 📡 ENDPOINT HTTP: Para cargar el historial cuando el alumno entra al video
     @GetMapping("/api/foro/leccion/{leccionId}")
-    public ResponseEntity<List<ComentarioDTO>> obtenerHistorial(@PathVariable Long leccionId) {
-        List<ComentarioDTO> historial = comentarioRepository.findByLeccionIdOrderByFechaCreacionAsc(leccionId)
-                .stream()
-                .map(this::convertirADTO)
-                .collect(Collectors.toList());
+    public ResponseEntity<Page<ComentarioDTO>> obtenerHistorial(@PathVariable Long leccionId, Pageable pageable) {
+        Page<ComentarioDTO> historial = comentarioRepository
+                .findByLeccionIdOrderByFechaCreacionAsc(leccionId, pageable)
+                .map(this::convertirADTO);
         return ResponseEntity.ok(historial);
     }
 

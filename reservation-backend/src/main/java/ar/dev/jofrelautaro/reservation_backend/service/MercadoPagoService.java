@@ -29,7 +29,6 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -198,11 +197,11 @@ public class MercadoPagoService {
 
         try {
             // 3. HACEMOS LA LLAMADA (Sin usar el SDK de Mercado Pago)
-            ResponseEntity<Map> response = restTemplate.exchange(
+            ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
                 "https://api.mercadopago.com/checkout/preferences",
                 HttpMethod.POST,
                 entity,
-                Map.class
+                new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {}
             );
 
             Map<String, Object> mpResponse = response.getBody();

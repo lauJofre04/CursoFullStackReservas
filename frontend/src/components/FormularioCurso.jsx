@@ -1,5 +1,6 @@
 import { useState, useEffect, forwardRef } from 'react';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 import clienteAxios from '../api/axiosConfig';
 
 export const FormularioCurso = forwardRef(({ cursos, setCursos }, ref) => {
@@ -35,12 +36,13 @@ export const FormularioCurso = forwardRef(({ cursos, setCursos }, ref) => {
     onSuccess: (nuevoCliente) => {
       setCursos([...cursos, nuevoCliente]);
       queryClient.invalidateQueries({ queryKey: ['cursos'] });
-      setMensaje({ texto: '¡Curso creado con éxito! Ya está visible en la vidriera.', tipo: 'exito' });
+      toast.success('¡Curso creado con éxito! Ya está visible en la vidriera.');
       resetFormulario();
     },
     onError: (error) => {
       console.error(error);
-      setMensaje({ texto: 'Hubo un error al guardar el curso. Revisa la consola.', tipo: 'error' });
+      const errorMsg = error.response?.data?.mensaje || 'Hubo un error al guardar el curso. Revisa la consola.';
+      toast.error(errorMsg);
     }
   });
 
@@ -60,14 +62,15 @@ export const FormularioCurso = forwardRef(({ cursos, setCursos }, ref) => {
     onSuccess: (cursoActualizado) => {
       setCursos(cursos.map(c => c.id === cursoActualizado.id ? cursoActualizado : c));
       queryClient.invalidateQueries({ queryKey: ['cursos'] });
-      setMensaje({ texto: '¡Curso actualizado correctamente!', tipo: 'exito' });
+      toast.success('¡Curso actualizado correctamente!');
       setCursoEnEdicion(null);
       setIdCursoEditando(null);
       resetFormulario();
     },
     onError: (error) => {
       console.error(error);
-      setMensaje({ texto: 'Hubo un error al actualizar el curso. Revisa la consola.', tipo: 'error' });
+      const errorMsg = error.response?.data?.mensaje || 'Hubo un error al actualizar el curso. Revisa la consola.';
+      toast.error(errorMsg);
     }
   });
 
