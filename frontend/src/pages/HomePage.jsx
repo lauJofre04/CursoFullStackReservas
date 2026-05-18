@@ -33,14 +33,15 @@ export const HomePage = () => {
   const { isLoading: cargando, error, isFetching } = useQuery({
     queryKey: ['cursosDisponibles', page],
     queryFn: async () => {
-      const res = await clienteAxios.get(`cursos?page=${page}&size=${PAGE_SIZE}`);
+      const res = await clienteAxios.get(`/cursos?page=${page}&size=${PAGE_SIZE}`);
       return res.data;
     },
     keepPreviousData: true,
     onSuccess: (data) => {
-      const nuevos = data?.content || [];
+      const pageData = data?.content ? data : { content: data || [], last: true };
+      const nuevos = pageData.content || [];
       setCursos((prevCursos) => (page === 0 ? nuevos : [...prevCursos, ...nuevos]));
-      setHasMore(!data.last);
+      setHasMore(!pageData.last);
     },
   });
 
@@ -63,7 +64,7 @@ export const HomePage = () => {
   if (error) return <div className="text-center mt-20 text-xl font-bold text-red-600">Hubo un error al cargar la vidriera ❌</div>;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-950 px-4 py-8 sm:px-6 sm:py-10 transition-colors duration-300">
+    <div className="min-h-screen bg-white dark:bg-slate-950 px-4 py-8 sm:px-6 sm:py-10 transition-colors duration-300">
       <div className="max-w-7xl mx-auto">
         <h1 className="text-4xl font-extrabold text-gray-900 dark:text-slate-100 mb-6 text-center">
           Nuestros Cursos Disponibles
@@ -119,8 +120,8 @@ export const HomePage = () => {
               return (
                 <div key={curso.id} className="bg-white dark:bg-slate-800 rounded-2xl shadow-md overflow-hidden transform transition duration-300 hover:-translate-y-1 hover:shadow-xl">
                   <img
-                    src={curso.imagen?.replace('http://', 'https://')}
-                    alt={curso.titulo}
+                    src={curso.imagen ? curso.imagen.replace('http://', 'https://') : 'https://via.placeholder.com/640x360.png?text=Curso'}
+                    alt={curso.titulo || 'Curso disponible'}
                     className="w-full h-48 object-cover"
                   />
 
@@ -145,13 +146,13 @@ export const HomePage = () => {
                       {curso.titulo}
                     </h2>
                     <p className="text-gray-600 dark:text-slate-300 mb-4 line-clamp-3">
-                      {curso.descripcion}
+                      {curso.descripcion || 'Descripción del curso próximamente.'}
                     </p>
 
                     <div className="flex flex-col gap-4 mt-4">
                       <div className="flex items-center justify-between gap-4">
                         <span className="text-2xl font-black text-blue-600 dark:text-blue-400">
-                          ${curso.precio.toLocaleString('es-AR')}
+                          ${curso.precio?.toLocaleString ? curso.precio.toLocaleString('es-AR') : '0'}
                         </span>
                         <span className="text-sm text-slate-500 dark:text-slate-400">
                           ({reviewCount} reviews)
