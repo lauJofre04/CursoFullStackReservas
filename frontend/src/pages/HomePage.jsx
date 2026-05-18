@@ -11,6 +11,8 @@ export const HomePage = () => {
   const [cursos, setCursos] = useState([]);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(false);
+  const [apiDebug, setApiDebug] = useState(null);
+  const [apiDebugOpen, setApiDebugOpen] = useState(false);
 
   const getBadgeLabel = (curso) => {
     return curso.categoria || curso.tipo || curso.cursoNivel || curso.nivel || 'General';
@@ -39,10 +41,15 @@ export const HomePage = () => {
     keepPreviousData: true,
     onSuccess: (data) => {
       console.debug('Cursos API response:', data);
+      setApiDebug({ status: 'ok', data });
       const pageData = data?.content ? data : { content: data || [], last: true };
       const nuevos = pageData.content || [];
       setCursos((prevCursos) => (page === 0 ? nuevos : [...prevCursos, ...nuevos]));
       setHasMore(!pageData.last);
+    },
+    onError: (err) => {
+      console.debug('Cursos API error:', err);
+      setApiDebug({ status: 'error', error: err?.message || String(err) });
     },
   });
 
@@ -196,4 +203,22 @@ export const HomePage = () => {
     </div>
     </div>
   );
+      {/* Debug UI: botón para abrir/mostrar la última respuesta de la API */}
+      <button
+        type="button"
+        onClick={() => setApiDebugOpen((s) => !s)}
+        className="fixed left-4 bottom-4 z-50 bg-slate-800 text-white px-3 py-2 rounded-md shadow-md"
+      >
+        API Debug
+      </button>
+
+      {apiDebugOpen && (
+        <div className="fixed left-4 bottom-16 z-50 w-80 max-h-72 overflow-auto bg-white text-slate-900 p-3 rounded-lg shadow-lg">
+          <div className="flex items-center justify-between mb-2">
+            <strong>API Cursos</strong>
+            <button onClick={() => setApiDebugOpen(false)} className="text-sm text-slate-500">Cerrar</button>
+          </div>
+          <pre className="text-xs whitespace-pre-wrap">{JSON.stringify({ cursosLength: cursos.length, apiDebug }, null, 2)}</pre>
+        </div>
+      )}
 };

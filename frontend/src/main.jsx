@@ -28,14 +28,11 @@ Sentry.init({
 const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
 const queryClient = new QueryClient();
 
-// Forzar tema claro por defecto si no hay configuración previa.
+// Forzar tema claro por defecto (sobrescribe cualquier preferencia previa)
 if (typeof window !== 'undefined') {
   try {
-    const stored = window.localStorage.getItem('theme');
-    if (!stored) {
-      window.localStorage.setItem('theme', 'light');
-      window.document.documentElement.classList.remove('dark');
-    }
+    window.localStorage.setItem('theme', 'light');
+    window.document.documentElement.classList.remove('dark');
   } catch (e) {
     // ignored
   }
