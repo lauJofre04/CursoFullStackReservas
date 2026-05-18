@@ -152,7 +152,7 @@ export const HomePage = () => {
                     <div className="flex flex-col gap-4 mt-4">
                       <div className="flex items-center justify-between gap-4">
                         <span className="text-2xl font-black text-blue-600 dark:text-blue-400">
-                          ${curso.precio?.toLocaleString ? curso.precio.toLocaleString('es-AR') : '0'}
+                          {curso.precio != null ? `$${curso.precio.toLocaleString('es-AR')}` : '$0'}
                         </span>
                         <span className="text-sm text-slate-500 dark:text-slate-400">
                           ({reviewCount} reviews)
