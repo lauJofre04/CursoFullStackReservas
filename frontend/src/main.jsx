@@ -28,6 +28,19 @@ Sentry.init({
 const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
 const queryClient = new QueryClient();
 
+// Forzar tema claro por defecto si no hay configuración previa.
+if (typeof window !== 'undefined') {
+  try {
+    const stored = window.localStorage.getItem('theme');
+    if (!stored) {
+      window.localStorage.setItem('theme', 'light');
+      window.document.documentElement.classList.remove('dark');
+    }
+  } catch (e) {
+    // ignored
+  }
+}
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     {/* Envolvemos toda la aplicación con el proveedor de Google */}

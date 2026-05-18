@@ -38,6 +38,7 @@ export const HomePage = () => {
     },
     keepPreviousData: true,
     onSuccess: (data) => {
+      console.debug('Cursos API response:', data);
       const pageData = data?.content ? data : { content: data || [], last: true };
       const nuevos = pageData.content || [];
       setCursos((prevCursos) => (page === 0 ? nuevos : [...prevCursos, ...nuevos]));

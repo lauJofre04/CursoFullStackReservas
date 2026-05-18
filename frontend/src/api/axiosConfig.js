@@ -1,10 +1,19 @@
 import axios from 'axios';
 
-const baseApiUrl = import.meta.env.VITE_API_URL || 'https://cursofullstackreservas.onrender.com';
+const envUrl = import.meta.env.VITE_API_URL;
+let baseApiUrl = envUrl || 'https://cursofullstackreservas.onrender.com';
+
+// Si estamos en desarrollo local (ejecutando en localhost), preferimos usar el backend local
+if (typeof window !== 'undefined') {
+    const host = window.location.hostname;
+    if (host === 'localhost' || host === '127.0.0.1') {
+        baseApiUrl = envUrl || 'http://localhost:8080';
+    }
+}
 
 // 1. Creamos nuestra propia versión de Axios con la URL base de tu Spring Boot
 const clienteAxios = axios.create({
-    baseURL: `${baseApiUrl}/api`
+        baseURL: `${baseApiUrl}/api`
 });
 
 // 2. El Interceptor (El "empleado de aduana")
