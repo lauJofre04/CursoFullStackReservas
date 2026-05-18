@@ -13,11 +13,11 @@ export const HomePage = () => {
   const [hasMore, setHasMore] = useState(false);
 
   const getBadgeLabel = (curso) => {
-    return curso.categoria || curso.nivel || curso.tipo || curso.cursoNivel || 'General';
+    return curso.categoria || curso.tipo || curso.cursoNivel || curso.nivel || 'General';
   };
 
   const getDifficultyLabel = (curso) => {
-    return curso.dificultad || curso.nivel || curso.dificultadNivel || 'Principiante';
+    return curso.dificultad || curso.nivel || curso.dificultadNivel || curso.cursoNivel || 'Sin dificultad';
   };
 
   const getRating = (curso) => {
@@ -28,7 +28,7 @@ export const HomePage = () => {
     return curso.reviews ?? curso.valoraciones ?? 45;
   };
 
-  const nivelesDisponibles = ['Principiante', 'Intermedio', 'Avanzado'];
+  const nivelesDisponibles = ['Principiante', 'Intermedio', 'Avanzado', 'Sin dificultad'];
 
   const { isLoading: cargando, error, isFetching } = useQuery({
     queryKey: ['cursosDisponibles', page],
@@ -172,7 +172,9 @@ export const HomePage = () => {
             })
           ) : (
             <div className="col-span-full text-center text-gray-500 dark:text-slate-400 text-lg">
-              No hay cursos que coincidan con este filtro.
+              {cursos.length > 0
+                ? 'No hay cursos que coincidan con este filtro.'
+                : 'Aún no hay cursos disponibles. Vuelve más tarde.'}
             </div>
           )}
         </div>
@@ -190,7 +192,6 @@ export const HomePage = () => {
           </div>
         )}
       </div>
-    </div>
     </div>
   );
 };

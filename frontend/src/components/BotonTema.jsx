@@ -5,9 +5,7 @@ export const BotonTema = () => {
     if (typeof window !== 'undefined' && window.localStorage.getItem('theme')) {
       return window.localStorage.getItem('theme');
     }
-    return typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches
-      ? 'dark'
-      : 'light';
+    return 'light';
   });
 
   useEffect(() => {
