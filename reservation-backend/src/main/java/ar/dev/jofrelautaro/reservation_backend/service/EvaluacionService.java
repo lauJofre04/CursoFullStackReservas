@@ -13,9 +13,11 @@ import ar.dev.jofrelautaro.reservation_backend.model.entity.ResultadoEvaluacion;
 import ar.dev.jofrelautaro.reservation_backend.model.entity.Usuario;
 import ar.dev.jofrelautaro.reservation_backend.repository.CursoRepository;
 import ar.dev.jofrelautaro.reservation_backend.repository.EvaluacionRepository;
+import ar.dev.jofrelautaro.reservation_backend.repository.InscripcionRepository;
 import ar.dev.jofrelautaro.reservation_backend.repository.OpcionRepository;
 import ar.dev.jofrelautaro.reservation_backend.repository.ResultadoEvaluacionRepository;
 import ar.dev.jofrelautaro.reservation_backend.repository.UsuarioRepository;
+import ar.dev.jofrelautaro.reservation_backend.service.NotificacionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +36,8 @@ public class EvaluacionService {
     private final ResultadoEvaluacionRepository resultadoRepository;
     private final UsuarioRepository usuarioRepository;
     private final CursoRepository cursoRepository;
+    private final InscripcionRepository inscripcionRepository;
+    private final NotificacionService notificacionService;
 
     /**
      * Devuelve el cuestionario limpio al frontend (SIN las respuestas correctas)
@@ -110,7 +114,20 @@ public class EvaluacionService {
 
         // 5. Guardamos la evaluación. Gracias al CascadeType.ALL en las entidades, 
         // Hibernate automáticamente guarda las preguntas y las opciones por nosotros.
-        return evaluacionRepository.save(evaluacion);
+        Evaluacion evaluacionGuardada = evaluacionRepository.save(evaluacion);
+
+        // Notificamos a los alumnos inscriptos del curso
+        List<String> alumnosEmails = inscripcionRepository.findUsuariosByCursoId(curso.getId()).stream()
+                .map(Usuario::getEmail)
+                .filter(email -> email != null && !email.isBlank())
+                .toList();
+
+        notificacionService.notificarUsuarios(
+                alumnosEmails,
+                "Se ha publicado una nueva evaluación en " + curso.getTitulo() + ". ¡Asegurate de revisarla!"
+        );
+
+        return evaluacionGuardada;
     }
     /**
      * Recibe las respuestas del alumno, calcula la nota y guarda el resultado

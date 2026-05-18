@@ -25,6 +25,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import ar.dev.jofrelautaro.reservation_backend.service.NotificacionService;
 
 @Service
 @RequiredArgsConstructor
@@ -38,6 +39,7 @@ public class TareaProgramadaService {
     private final InscripcionRepository inscripcionRepository;
     private final ModuloRepository moduloRepository; // 🔌 NUEVO, si usás módulos en tus tareas
     private final EmailService emailService;
+    private final NotificacionService notificacionService;
 
     @Value("${app.frontend.base-url:https://devcursos-lj.vercel.app/}")
     private String frontendBaseUrl;
@@ -151,10 +153,25 @@ public class TareaProgramadaService {
                     .build();
         }
 
-        return entregaTareaRepository.save(entrega);
+        EntregaTarea entregaGuardada = entregaTareaRepository.save(entrega);
+
+        if (entregaGuardada.getTarea() != null) {
+            List<String> profesorEmails = obtenerProfesoresDelCurso(entregaGuardada.getTarea()).stream()
+                    .map(Usuario::getEmail)
+                    .filter(email -> email != null && !email.isBlank())
+                    .toList();
+
+            notificacionService.notificarUsuarios(
+                    profesorEmails,
+                    "El alumno " + entregaGuardada.getAlumno().getNombre() + " ha enviado su resolución para " + entregaGuardada.getTarea().getTitulo() + ". Tienes entregas pendientes de corrección."
+            );
+        }
+
+        return entregaGuardada;
     }
 
     public java.util.Optional<EntregaTarea> obtenerEntregaDeAlumno(Long tareaId, Long alumnoId) {
+
         return entregaTareaRepository.findByTareaIdAndAlumnoId(tareaId, alumnoId);
     }
 
@@ -224,6 +241,11 @@ public class TareaProgramadaService {
             } catch (Exception e) {
                 System.err.println("Error enviando notificación de corrección: " + e.getMessage());
             }
+
+            notificacionService.notificarUsuario(
+                    destinatario,
+                    "Tu entrega para la evaluación " + tituloTarea + " ha sido calificada. Has obtenido un " + (nota != null ? nota : "0") + "."
+            );
         }
 
         return entregaGuardada;
@@ -255,6 +277,19 @@ public class TareaProgramadaService {
             return tarea.getModulo().getCurso().getId();
         }
         return null;
+    }
+
+    private List<Usuario> obtenerProfesoresDelCurso(TareaProgramada tarea) {
+        if (tarea == null) {
+            return List.of();
+        }
+        if (tarea.getCurso() != null && tarea.getCurso().getProfesores() != null) {
+            return tarea.getCurso().getProfesores().stream().toList();
+        }
+        if (tarea.getModulo() != null && tarea.getModulo().getCurso() != null && tarea.getModulo().getCurso().getProfesores() != null) {
+            return tarea.getModulo().getCurso().getProfesores().stream().toList();
+        }
+        return List.of();
     }
 
     // Método para crear tarea con archivo de consigna (Admin)

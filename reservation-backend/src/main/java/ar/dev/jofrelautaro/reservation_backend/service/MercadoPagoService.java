@@ -43,6 +43,7 @@ public class MercadoPagoService {
     private final UsuarioRepository usuarioRepository;
     private final InscripcionService inscripcionService;
     private final EmailService emailService;
+    private final NotificacionService notificacionService;
 
     // Esto se ejecuta apenas arranca Spring Boot para inyectar el token globalmente
     @PostConstruct
@@ -281,6 +282,22 @@ public class MercadoPagoService {
 
                 System.out.println("📧 Disparando correo HTML de bienvenida...");
                 emailService.enviarCorreoBienvenidaHTML(pago.getUsuario().getEmail(), pago.getUsuario().getNombre(), pago.getCurso().getTitulo());
+
+                System.out.println("🔔 Enviando notificación en tiempo real al alumno y profesor(es)...");
+                notificacionService.notificarUsuario(
+                        pago.getUsuario().getEmail(),
+                        "¡Pago aprobado! Ya tenés acceso completo al curso: " + pago.getCurso().getTitulo() + ". ¡Éxitos en tu aprendizaje!"
+                );
+
+                if (pago.getCurso() != null && pago.getCurso().getProfesores() != null) {
+                    pago.getCurso().getProfesores().stream()
+                            .map(usuario -> usuario.getEmail())
+                            .filter(email -> email != null && !email.isBlank())
+                            .forEach(email -> notificacionService.notificarUsuario(
+                                    email,
+                                    "¡Ka-ching! 💸 Un nuevo alumno se ha inscrito en tu curso " + pago.getCurso().getTitulo() + "."
+                            ));
+                }
             } else {
                 System.out.println("⚠️ Pago no aprobado. Estado actual: " + payment.getStatus());
                 pago.setMercadoPagoPaymentId(paymentId.toString());

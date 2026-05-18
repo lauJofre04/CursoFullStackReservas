@@ -68,6 +68,9 @@ export const Navbar = () => {
               <Link to="/mis-cursos" className="block px-4 py-2 text-sm text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-300" onClick={() => setMenuAbierto(false)}>
                 Mis Cursos
               </Link>
+              <Link to="/notificaciones" className="block px-4 py-2 text-sm text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-300" onClick={() => setMenuAbierto(false)}>
+                Notificaciones
+              </Link>
               <Link to="/perfil" className="block px-4 py-2 text-sm text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-300" onClick={() => setMenuAbierto(false)}>
                 Mi Perfil
               </Link>

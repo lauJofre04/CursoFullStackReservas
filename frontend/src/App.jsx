@@ -9,6 +9,7 @@ import { Navbar } from './components/Navbar';
 import { CursoDetallePage } from './pages/CursoDetalle';
 import { MisCursosPage } from './pages/MisCursosPage';
 import { AulaVirtualPage } from './pages/AulaVirtualPage';
+import { NotificacionesPage } from './pages/NotificacionesPage';
 import { ProtectedRoute } from './components/ProtectedRoute'; 
 import { SolicitarRecuperacionPage } from './pages/SolicitarRecuperacion';
 import { CambiarPasswordPage } from './pages/CambiarPasswordPage';
@@ -58,6 +59,14 @@ function App() {
           element={
             <ProtectedRoute>
               <MisCursosPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/notificaciones" 
+          element={
+            <ProtectedRoute>
+              <NotificacionesPage />
             </ProtectedRoute>
           } 
         />
