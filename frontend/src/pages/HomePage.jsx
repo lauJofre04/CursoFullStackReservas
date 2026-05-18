@@ -193,5 +193,6 @@ export const HomePage = () => {
         )}
       </div>
     </div>
+    </div>
   );
 };
