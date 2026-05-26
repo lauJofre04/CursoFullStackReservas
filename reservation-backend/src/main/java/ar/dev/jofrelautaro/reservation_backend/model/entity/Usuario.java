@@ -1,5 +1,6 @@
 package ar.dev.jofrelautaro.reservation_backend.model.entity;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -47,7 +48,8 @@ public class Usuario implements UserDetails { // 🔥 Implementamos UserDetails
     @Column(name = "fecha_nacimiento")
     private java.time.LocalDate fechaNacimiento; // Usamos LocalDate que es el estándar de Java 8+ para fechas sin hora
 
-    // ...
+    @Column(name = "fecha_creacion")
+    private LocalDateTime fechaCreacion;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -67,6 +69,8 @@ public class Usuario implements UserDetails { // 🔥 Implementamos UserDetails
     private Set<Curso> cursosProfesor;
 
     // === MÉTODOS DE SPRING SECURITY ===
+
+    
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -99,5 +103,12 @@ public class Usuario implements UserDetails { // 🔥 Implementamos UserDetails
     public boolean isEnabled() {
         // 🔥 Acá conectamos Spring Security con tu borrado lógico
         return this.activo; 
+    }
+
+    @PrePersist
+    protected void onCreate() {
+        if (this.fechaCreacion == null) {
+            this.fechaCreacion = LocalDateTime.now();
+        }
     }
 }

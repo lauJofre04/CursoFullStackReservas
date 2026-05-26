@@ -11,8 +11,6 @@ export const HomePage = () => {
   const [cursos, setCursos] = useState([]);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(false);
-  const [apiDebug, setApiDebug] = useState(null);
-  const [apiDebugOpen, setApiDebugOpen] = useState(false);
 
   const getBadgeLabel = (curso) => curso.categoria || curso.tipo || curso.cursoNivel || curso.nivel || 'General';
   const getDifficultyLabel = (curso) => curso.dificultad || curso.nivel || curso.dificultadNivel || curso.cursoNivel || 'Sin dificultad';
