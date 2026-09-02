@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -24,4 +25,7 @@ public interface CursoRepository extends JpaRepository<Curso, Long> {
     List<Curso> findByProfesoresAndActivoTrue(Usuario profesor);
 
     List<Curso> findByActivoTrue();
+
+    @Query("select distinct c from Curso c left join fetch c.profesores")
+    List<Curso> findAllWithProfesores();
 }
