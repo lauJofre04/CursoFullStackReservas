@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Client } from '@stomp/stompjs';
-import SockJS from 'sockjs-client/dist/sockjs.js';
+import { toWebSocketUrl } from '../services/webSocketUrl';
 import toast from 'react-hot-toast';
 import clienteAxios from '../api/axiosConfig';
 import { useAuth } from '../context/AuthContext';
@@ -107,8 +107,7 @@ export const ChatLauncher = () => {
 
     const token = localStorage.getItem('token');
     const client = new Client({
-      brokerURL: undefined,
-      webSocketFactory: () => new SockJS(`${import.meta.env.VITE_API_URL || 'https://cursofullstackreservas.onrender.com'}/api/ws-chat`, undefined, { withCredentials: false }),
+      brokerURL: toWebSocketUrl(`${import.meta.env.VITE_API_URL || 'https://cursofullstackreservas.onrender.com'}/api/ws-chat`),
       connectHeaders: {
         Authorization: `Bearer ${token}`,
       },

@@ -2,6 +2,7 @@ package ar.dev.jofrelautaro.reservation_backend.service;
 
 import ar.dev.jofrelautaro.reservation_backend.model.entity.*;
 import ar.dev.jofrelautaro.reservation_backend.repository.EntregaTareaRepository;
+import ar.dev.jofrelautaro.reservation_backend.service.NotificacionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,6 +25,9 @@ class TareaProgramadaServiceTest {
 
     @Mock
     private EmailService emailService;
+
+    @Mock
+    private NotificacionService notificacionService;
 
     @InjectMocks
     private TareaProgramadaService tareaProgramadaService;

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { Client } from '@stomp/stompjs';
-import SockJS from 'sockjs-client';
+import { toWebSocketUrl } from '../services/webSocketUrl';
 import clienteAxios from '../api/axiosConfig';
 
 const PAGE_SIZE = 20;
@@ -68,7 +68,7 @@ export const ForoLeccion = ({ leccionId }) => {
     const token = localStorage.getItem('token');
 
     const client = new Client({
-      webSocketFactory: () => new SockJS(`${import.meta.env.VITE_BACKEND_URL}/api/ws-chat`),
+      brokerURL: toWebSocketUrl(`${import.meta.env.VITE_BACKEND_URL}/api/ws-chat`),
       connectHeaders: {
         Authorization: `Bearer ${token}`,
       },

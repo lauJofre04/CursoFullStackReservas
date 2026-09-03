@@ -4,6 +4,8 @@ import ar.dev.jofrelautaro.reservation_backend.model.entity.Curso;
 import ar.dev.jofrelautaro.reservation_backend.model.entity.Usuario;
 import ar.dev.jofrelautaro.reservation_backend.model.entity.Rol;
 import ar.dev.jofrelautaro.reservation_backend.repository.CursoRepository;
+import ar.dev.jofrelautaro.reservation_backend.repository.InscripcionRepository;
+import ar.dev.jofrelautaro.reservation_backend.repository.ModuloRepository;
 import ar.dev.jofrelautaro.reservation_backend.repository.TokenRecuperacionRepository;
 import ar.dev.jofrelautaro.reservation_backend.repository.TokenVerificacionRepository;
 import ar.dev.jofrelautaro.reservation_backend.repository.UsuarioRepository;
@@ -39,6 +41,12 @@ class CursoControllerIntegrationTest {
     private CursoRepository cursoRepository;
 
     @Autowired
+    private InscripcionRepository inscripcionRepository;
+
+    @Autowired
+    private ModuloRepository moduloRepository;
+
+    @Autowired
     private TokenVerificacionRepository tokenVerificacionRepository;
 
     @Autowired
@@ -59,6 +67,8 @@ class CursoControllerIntegrationTest {
         
         tokenRecuperacionRepository.deleteAll();
         tokenVerificacionRepository.deleteAll();
+        inscripcionRepository.deleteAll();
+        moduloRepository.deleteAll();
         cursoRepository.deleteAll();
         usuarioRepository.deleteAll();
 
