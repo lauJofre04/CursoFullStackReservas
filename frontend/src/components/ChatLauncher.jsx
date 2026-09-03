@@ -168,8 +168,12 @@ export const ChatLauncher = () => {
     };
   }, [usuario]);
 
+  if (!usuario) {
+    return null;
+  }
+
   return (
-    <div className="pointer-events-none fixed inset-0 z-[9999]">
+    <div className="hidden">
       <button
         type="button"
         onClick={abrirNotificaciones}

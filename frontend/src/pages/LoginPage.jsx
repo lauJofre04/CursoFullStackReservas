@@ -119,11 +119,11 @@ export const LoginPage = () => {
           onSuccess={async (credentialResponse) => {
             console.log("Token de Google:", credentialResponse.credential);
             // Le mandamos el token al backend
-            const res = await axios.post("https://cursofullstackreservas.onrender.com/api/auth/google", {
+            const res = await clienteAxios.post('/auth/google', {
                 token: credentialResponse.credential
             });
             // Guardamos TU JWT y lo mandamos al home
-            localStorage.setItem('token', res.data.token);
+            login(res.data.token);
             navigate('/mis-cursos');
           }}
           onError={() => {

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import clienteAxios from '../api/axiosConfig'; 
+import { useAuth } from '../context/AuthContext';
 
 export const RegisterPage = () => {
   const [nombre, setNombre] = useState('');
@@ -11,6 +12,7 @@ export const RegisterPage = () => {
   const [error, setError] = useState('');
   const [mostrarPassword, setMostrarPassword] = useState(false);
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -26,10 +28,10 @@ export const RegisterPage = () => {
 
       // Guardamos el token igual que en el login
       const token = response.data.token;
-      localStorage.setItem('token', token);
+      login(token);
 
       toast.success('¡Cuenta creada con éxito! Redirigiendo...');
-      setTimeout(() => navigate('/panel'), 500);
+      setTimeout(() => navigate('/home'), 500);
 
     } catch (err) {
       console.error(err);

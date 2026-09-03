@@ -31,8 +31,6 @@ export const HomePage = () => {
   // 2. USAMOS useEffect PARA ATARPAR LA DATA CUANDO LLEGA
   useEffect(() => {
     if (data) {
-      console.debug('Cursos API response:', data);
-      setApiDebug({ status: 'ok', data });
       const pageData = data?.content ? data : { content: data || [], last: true };
       const nuevos = pageData.content || [];
       
@@ -43,8 +41,7 @@ export const HomePage = () => {
 
   useEffect(() => {
     if (error) {
-      console.debug('Cursos API error:', error);
-      setApiDebug({ status: 'error', error: error?.message || String(error) });
+      console.error('Error al cargar cursos:', error);
     }
   }, [error]);
 
