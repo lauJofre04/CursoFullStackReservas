@@ -32,7 +32,7 @@ export const Navbar = () => {
   return (
     <nav className="bg-white dark:bg-slate-900 shadow px-6 py-4 flex justify-between items-center z-40 relative text-slate-900 dark:text-slate-100">
       <div className="font-extrabold text-2xl text-blue-600 tracking-tight">
-        <Link reloadDocument to="/">DevCursos</Link>
+        <Link reloadDocument to="/home">DevCursos</Link>
       </div>
 
       <div className="flex items-center gap-4">
