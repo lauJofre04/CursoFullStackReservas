@@ -98,7 +98,7 @@ export const CambiarPasswordPage = () => {
         </form>
         
         <div className="text-center mt-4">
-          <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500">Ir al Login</Link>
+          <Link reloadDocument to="/login" className="font-medium text-blue-600 hover:text-blue-500">Ir al Login</Link>
         </div>
       </div>
     </div>

@@ -187,7 +187,7 @@ export const CursoDetallePage = () => {
               Pago 100% seguro procesado por Mercado Pago.
             </p>
 
-            <Link to="/home" className="mt-6 text-center text-gray-500 dark:text-slate-400 font-semibold py-3 hover:bg-gray-50 dark:hover:bg-slate-800 rounded-xl transition-colors w-full">
+            <Link reloadDocument to="/home" className="mt-6 text-center text-gray-500 dark:text-slate-400 font-semibold py-3 hover:bg-gray-50 dark:hover:bg-slate-800 rounded-xl transition-colors w-full">
               Volver a la vidriera
             </Link>
           </div>

@@ -68,7 +68,7 @@ export const SolicitarRecuperacionPage = () => {
         </form>
 
         <div className="text-center mt-4">
-          <Link to="/login" className="font-medium text-blue-600 dark:text-blue-300 hover:text-blue-500 dark:hover:text-blue-200">
+          <Link reloadDocument to="/login" className="font-medium text-blue-600 dark:text-blue-300 hover:text-blue-500 dark:hover:text-blue-200">
             Volver al Login
           </Link>
         </div>

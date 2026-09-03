@@ -32,7 +32,7 @@ export const Navbar = () => {
   return (
     <nav className="bg-white dark:bg-slate-900 shadow px-6 py-4 flex justify-between items-center z-40 relative text-slate-900 dark:text-slate-100">
       <div className="font-extrabold text-2xl text-blue-600 tracking-tight">
-        <Link to="/">DevCursos</Link>
+        <Link reloadDocument to="/">DevCursos</Link>
       </div>
 
       <div className="flex items-center gap-4">
@@ -42,6 +42,7 @@ export const Navbar = () => {
           <>
             <div className="flex items-center gap-1">
               <Link
+                reloadDocument
                 to="/notificaciones"
                 className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-blue-600 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-blue-300"
                 aria-label="Notificaciones"
@@ -52,6 +53,7 @@ export const Navbar = () => {
                 </svg>
               </Link>
               <Link
+                reloadDocument
                 to="/chat"
                 className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-blue-600 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-blue-300"
                 aria-label="Mensajes"
@@ -84,11 +86,11 @@ export const Navbar = () => {
                     <p className="text-xs text-gray-500 dark:text-slate-400 uppercase font-semibold">Sesión iniciada como</p>
                     <p className="text-sm font-bold text-gray-900 dark:text-slate-100 truncate mt-0.5">{usuario.nombre}</p>
                   </div>
-                  <Link to="/mis-cursos" className="block px-4 py-2 text-sm text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800" onClick={() => setMenuAbierto(false)}>Mis Cursos</Link>
-                  <Link to="/perfil" className="block px-4 py-2 text-sm text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800" onClick={() => setMenuAbierto(false)}>Mi Perfil</Link>
-                  <Link to="/mi-calendario" className="block px-4 py-2 text-sm text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800" onClick={() => setMenuAbierto(false)}>Mi Calendario</Link>
-                  {usuario.rol?.toUpperCase().includes('ADMIN') && <Link to="/admin-panel" className="block px-4 py-2 text-sm text-blue-700 hover:bg-blue-50" onClick={() => setMenuAbierto(false)}>Panel Admin</Link>}
-                  {usuario.rol?.toUpperCase().includes('PROFESOR') && <Link to="/profesor-panel" className="block px-4 py-2 text-sm text-green-700 hover:bg-green-50" onClick={() => setMenuAbierto(false)}>Panel Profesor</Link>}
+                  <Link reloadDocument to="/mis-cursos" className="block px-4 py-2 text-sm text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800" onClick={() => setMenuAbierto(false)}>Mis Cursos</Link>
+                  <Link reloadDocument to="/perfil" className="block px-4 py-2 text-sm text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800" onClick={() => setMenuAbierto(false)}>Mi Perfil</Link>
+                  <Link reloadDocument to="/mi-calendario" className="block px-4 py-2 text-sm text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800" onClick={() => setMenuAbierto(false)}>Mi Calendario</Link>
+                  {usuario.rol?.toUpperCase().includes('ADMIN') && <Link reloadDocument to="/admin-panel" className="block px-4 py-2 text-sm text-blue-700 hover:bg-blue-50" onClick={() => setMenuAbierto(false)}>Panel Admin</Link>}
+                  {usuario.rol?.toUpperCase().includes('PROFESOR') && <Link reloadDocument to="/profesor-panel" className="block px-4 py-2 text-sm text-green-700 hover:bg-green-50" onClick={() => setMenuAbierto(false)}>Panel Profesor</Link>}
                   <div className="border-t border-gray-100 dark:border-slate-700 mt-2 mb-1" />
                   <button onClick={handleLogout} className="block w-full text-left px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950">Cerrar Sesión</button>
                 </div>
@@ -98,13 +100,13 @@ export const Navbar = () => {
         ) : (
         <div className="flex items-center gap-4">
           <div className="flex items-center space-x-4">
-            <Link 
+            <Link reloadDocument
               to="/login" 
               className="text-gray-600 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-300 font-semibold transition-colors"
             >
               Iniciar Sesión
             </Link>
-            <Link 
+            <Link reloadDocument
               to="/register" 
               className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-5 rounded-xl transition-colors shadow-sm"
             >

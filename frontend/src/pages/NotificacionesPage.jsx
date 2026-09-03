@@ -43,7 +43,7 @@ export const NotificacionesPage = () => {
           <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">Notificaciones</h1>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <Link
+          <Link reloadDocument
             to="/home"
             className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200"
           >

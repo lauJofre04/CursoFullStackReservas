@@ -48,7 +48,7 @@ export const MisCursosPage = () => {
         {misCursos.length === 0 ? (
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-10 text-center">
             <h2 className="text-2xl font-bold text-gray-700 dark:text-slate-100 mb-4">Todavía no tenés cursos 😢</h2>
-            <Link to="/home" className="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors inline-block">
+            <Link reloadDocument to="/home" className="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors inline-block">
               Explorar la vidriera
             </Link>
           </div>

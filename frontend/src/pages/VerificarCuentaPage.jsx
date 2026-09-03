@@ -58,7 +58,7 @@ export const VerificarCuentaPage = () => {
 
         {!estado.cargando && (
           <div className="mt-8">
-            <Link to="/login" className="w-full inline-block py-3 px-4 rounded-xl text-white font-bold bg-blue-600 hover:bg-blue-700 transition-colors">
+            <Link reloadDocument to="/login" className="w-full inline-block py-3 px-4 rounded-xl text-white font-bold bg-blue-600 hover:bg-blue-700 transition-colors">
               Ir al Login
             </Link>
           </div>

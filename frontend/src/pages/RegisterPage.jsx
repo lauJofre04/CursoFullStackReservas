@@ -133,7 +133,7 @@ export const RegisterPage = () => {
 
         <p className="mt-6 text-center text-sm text-gray-600 dark:text-slate-400">
           ¿Ya tienes una cuenta?{' '}
-          <Link to="/login" className="text-blue-600 hover:underline font-semibold">
+          <Link reloadDocument to="/login" className="text-blue-600 hover:underline font-semibold">
             Inicia sesión aquí
           </Link>
         </p>
