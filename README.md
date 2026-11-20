@@ -17,12 +17,12 @@ La plataforma se encuentra completamente funcional y desplegada en la nube.
 
 Para facilitar la revisión del sistema por parte de reclutadores y líderes técnicos, la base de datos cuenta con perfiles de prueba pre-cargados (no es necesario registrarse):
 
-* 👑 **Administrador:** `admin@test.com` | Pass: `123456`
-  *(Control total, finanzas, creación de cursos y asignación de roles)*
 * 👨‍🏫 **Profesor:** `profe@test.com` | Pass: `123456`
   *(Gestión de contenido, módulos, exámenes y visualización de alumnos)*
 * 🧑‍🎓 **Alumno:** `usuario@test.com` | Pass: `123456`
   *(Exploración del catálogo, experiencia de compra en Checkout Pro y Aula Virtual)*
+
+> 👑 El rol **Administrador** (control total, finanzas, creación de cursos y asignación de roles) no tiene una cuenta pública de prueba por seguridad. Se puede ver en las capturas o solicitar una demo guiada.
 
 ## 💡 Características Principales
 
