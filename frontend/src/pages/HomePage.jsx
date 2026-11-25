@@ -60,7 +60,16 @@ export const HomePage = () => {
     );
   });
 
-  if (cargando && cursos.length === 0) return <div className="text-center mt-20 text-xl font-bold text-gray-600 dark:text-slate-300">Cargando cursos... ⏳</div>;
+  if (cargando && cursos.length === 0) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6" aria-label="Cargando cursos">
+        <div className="skeleton mb-10 h-56" />
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }, (_, i) => <div key={i} className="skeleton h-96" />)}
+        </div>
+      </div>
+    );
+  }
   if (error) return <div className="text-center mt-20 text-xl font-bold text-red-600">Hubo un error al cargar la vidriera ❌</div>;
 
   // 3. ENVOLVEMOS TODO EN UN FRAGMENTO <> PARA QUE EL BOTÓN DEBUG QUEDE ADENTRO DEL RETURN
@@ -68,9 +77,22 @@ export const HomePage = () => {
     <>
       <div className="min-h-screen bg-transparent px-4 py-8 sm:px-6 sm:py-10 transition-colors duration-300">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-4xl font-extrabold text-gray-900 dark:text-slate-100 mb-6 text-center">
-            Nuestros Cursos Disponibles
-          </h1>
+          <section className="hero anim-entrada mb-12 px-6 py-14 text-center sm:px-12 sm:py-20">
+            <div className="relative z-10 mx-auto max-w-3xl">
+              <p className="mb-4 inline-block rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold tracking-wide text-blue-100">
+                Aprendé a tu ritmo
+              </p>
+              <h1 className="text-4xl font-black leading-tight tracking-tight sm:text-6xl">
+                Cursos de programación{' '}
+                <span className="bg-gradient-to-r from-sky-300 to-violet-300 bg-clip-text text-transparent">que te dan trabajo.</span>
+              </h1>
+              <p className="mx-auto mt-5 max-w-xl text-lg text-slate-300">
+                Clases en video, evaluaciones, foro con tu profesor y certificado de progreso.
+              </p>
+            </div>
+          </section>
+
+          <h2 className="mb-6 text-2xl font-extrabold text-gray-900 dark:text-slate-100">Cursos disponibles</h2>
 
           <div className="mb-8 space-y-4">
             <div className="overflow-x-auto py-1">
@@ -113,7 +135,7 @@ export const HomePage = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {Array.isArray(cursosFiltrados) && cursosFiltrados.length > 0 ? (
-              cursosFiltrados.map((curso) => {
+              cursosFiltrados.map((curso, indice) => {
                 const badgeLabel = getBadgeLabel(curso);
                 const difficultyLabel = getDifficultyLabel(curso);
                 const rating = getRating(curso);
@@ -121,7 +143,7 @@ export const HomePage = () => {
                 const filledStars = Math.round(rating);
 
                 return (
-                  <div key={curso.id} className="bg-white dark:bg-slate-800 rounded-2xl shadow-md overflow-hidden transform transition duration-300 hover:-translate-y-1 hover:shadow-xl border border-gray-200 dark:border-slate-700">
+                  <div key={curso.id} style={{ animationDelay: `${(indice % 9) * 70}ms` }} className="card-curso anim-entrada bg-white dark:bg-slate-800 rounded-2xl shadow-md overflow-hidden border border-gray-200 dark:border-slate-700">
                     <img
                       src={curso.imagen ? curso.imagen.replace('http://', 'https://') : 'https://via.placeholder.com/640x360.png?text=Curso'}
                       alt={curso.titulo || 'Curso disponible'}
@@ -164,7 +186,7 @@ export const HomePage = () => {
 
                         <Link reloadDocument
                           to={`/curso/${curso.id}`}
-                          className="w-full sm:w-auto inline-flex justify-center rounded-xl bg-blue-600 text-white px-4 py-3 font-semibold hover:bg-blue-700 transition-colors shadow-sm shadow-blue-500/10"
+                          className="btn-glow w-full sm:w-auto inline-flex justify-center rounded-xl bg-blue-600 text-white px-4 py-3 font-semibold hover:bg-blue-700 shadow-sm shadow-blue-500/10"
                         >
                           Ver más
                         </Link>
@@ -188,7 +210,7 @@ export const HomePage = () => {
                 type="button"
                 onClick={() => setPage((prev) => prev + 1)}
                 disabled={isFetching}
-                className="w-full max-w-xs mx-auto inline-flex items-center justify-center rounded-full bg-blue-600 text-white px-6 py-3 font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn-glow w-full max-w-xs mx-auto inline-flex items-center justify-center rounded-full bg-blue-600 text-white px-6 py-3 font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isFetching ? 'Cargando más...' : 'Cargar más cursos'}
               </button>

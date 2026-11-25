@@ -30,9 +30,9 @@ export const Navbar = () => {
   };
 
   return (
-    <nav className="bg-white dark:bg-slate-900 shadow px-6 py-4 flex justify-between items-center z-40 relative text-slate-900 dark:text-slate-100">
-      <div className="font-extrabold text-2xl text-blue-600 tracking-tight">
-        <Link reloadDocument to="/home">DevCursos</Link>
+    <nav className="nav-vidrio sticky top-0 px-6 py-3.5 flex justify-between items-center z-40 text-slate-900 dark:text-slate-100">
+      <div className="font-extrabold text-2xl tracking-tight">
+        <Link reloadDocument to="/home" className="bg-gradient-to-r from-blue-600 to-violet-500 bg-clip-text text-transparent transition-opacity hover:opacity-80">DevCursos</Link>
       </div>
 
       <div className="flex items-center gap-4">
@@ -81,7 +81,7 @@ export const Navbar = () => {
               </button>
 
               {menuAbierto && (
-                <div className="absolute right-0 mt-3 w-56 bg-white dark:bg-slate-900 rounded-xl shadow-xl py-2 border border-gray-100 dark:border-slate-700 z-50">
+                <div className="anim-menu absolute right-0 mt-3 w-56 bg-white dark:bg-slate-900 rounded-xl shadow-xl py-2 border border-gray-100 dark:border-slate-700 z-50">
                   <div className="px-4 py-3 border-b border-gray-100 dark:border-slate-700 mb-1">
                     <p className="text-xs text-gray-500 dark:text-slate-400 uppercase font-semibold">Sesión iniciada como</p>
                     <p className="text-sm font-bold text-gray-900 dark:text-slate-100 truncate mt-0.5">{usuario.nombre}</p>
@@ -108,7 +108,7 @@ export const Navbar = () => {
             </Link>
             <Link reloadDocument
               to="/register" 
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-5 rounded-xl transition-colors shadow-sm"
+              className="btn-glow bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-5 rounded-xl shadow-sm"
             >
               Registrarse
             </Link>
