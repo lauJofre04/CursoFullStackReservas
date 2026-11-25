@@ -18,6 +18,7 @@ public class RateLimitInterceptor implements HandlerInterceptor {
 
     // Memoria caché para guardar el balde de cada dirección IP
     private final Map<String, Bucket> cache = new ConcurrentHashMap<>();
+    private static final int MAX_ENTRADAS = 10_000;
 
     // Creamos las reglas: 5 intentos por minuto como máximo
     private Bucket createNewBucket() {
@@ -27,6 +28,11 @@ public class RateLimitInterceptor implements HandlerInterceptor {
 
     // Buscamos si la IP ya tiene un balde, si no, le creamos uno nuevo
     public Bucket resolveBucket(String ip) {
+        // Tope de seguridad: sin esto el mapa crece sin límite (una IP nueva = una entrada nueva)
+        // y un atacante que varíe la IP podría agotar la memoria del servidor.
+        if (cache.size() >= MAX_ENTRADAS) {
+            cache.clear();
+        }
         return cache.computeIfAbsent(ip, k -> createNewBucket());
     }
 
