@@ -41,8 +41,8 @@ export const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-slate-950 dark:text-slate-100 flex items-center justify-center p-4 transition-colors duration-300">
-      <div className="bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-lg w-full max-w-md">
+    <div className="fondo-aurora min-h-screen dark:text-slate-100 flex items-center justify-center p-4 transition-colors duration-300">
+      <div className="anim-entrada bg-white/90 dark:bg-slate-900/90 backdrop-blur p-8 rounded-3xl shadow-2xl border border-white/60 dark:border-slate-700 w-full max-w-md">
         
         <h2 className="text-3xl font-bold text-center text-gray-800 dark:text-slate-100 mb-8">
           Iniciar Sesión
@@ -74,7 +74,7 @@ export const LoginPage = () => {
                 type={mostrarPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                 placeholder="••••••••"
                 required
               />
@@ -101,7 +101,7 @@ export const LoginPage = () => {
           <button
             type="submit"
             disabled={loginMutation.isPending}
-            className={`w-full text-white font-bold py-3 px-4 rounded-lg transition-colors duration-300 ${
+            className={`btn-glow w-full text-white font-bold py-3 px-4 rounded-lg ${
               loginMutation.isPending ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
             }`}
           >
@@ -117,7 +117,6 @@ export const LoginPage = () => {
         </p>
         <GoogleLogin
           onSuccess={async (credentialResponse) => {
-            console.log("Token de Google:", credentialResponse.credential);
             // Le mandamos el token al backend
             const res = await clienteAxios.post('/auth/google', {
                 token: credentialResponse.credential
