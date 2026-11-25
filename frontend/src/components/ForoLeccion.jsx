@@ -73,7 +73,6 @@ export const ForoLeccion = ({ leccionId }) => {
         Authorization: `Bearer ${token}`,
       },
       debug: function (str) {
-        console.log('STOMP: ' + str);
       },
       reconnectDelay: 5000,
       heartbeatIncoming: 4000,

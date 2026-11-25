@@ -74,14 +74,12 @@ export const CursoDetallePage = () => {
         throw new Error("Clave pública de Mercado Pago no disponible");
       }
 
-      console.log("📝 Iniciando proceso de pago para curso:", curso.id);
       
       // 1. Crear preferencia en el backend
       const response = await clienteAxios.post('/pagos/crear-preferencia', {
         cursoId: curso.id
       });
 
-      console.log("✅ Preferencia creada:", response.data);
 
       // 2. Extraer la ID de la preferencia
       const preferenceId = response.data.id;
@@ -187,7 +185,7 @@ export const CursoDetallePage = () => {
               Pago 100% seguro procesado por Mercado Pago.
             </p>
 
-            <Link reloadDocument to="/home" className="mt-6 text-center text-gray-500 dark:text-slate-400 font-semibold py-3 hover:bg-gray-50 dark:hover:bg-slate-800 rounded-xl transition-colors w-full">
+            <Link to="/home" className="mt-6 text-center text-gray-500 dark:text-slate-400 font-semibold py-3 hover:bg-gray-50 dark:hover:bg-slate-800 rounded-xl transition-colors w-full">
               Volver a la vidriera
             </Link>
           </div>
