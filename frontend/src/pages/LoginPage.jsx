@@ -126,7 +126,6 @@ export const LoginPage = () => {
             navigate('/mis-cursos');
           }}
           onError={() => {
-            console.log('Error al iniciar sesión con Google');
           }}
         />
       </div>

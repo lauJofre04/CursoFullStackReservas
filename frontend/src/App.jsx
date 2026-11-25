@@ -1,29 +1,31 @@
-import { useEffect } from 'react';
+import { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { LoginPage } from './pages/LoginPage';
-import { RegisterPage } from './pages/RegisterPage';
-import { PanelPage } from './pages/PanelPage';
-import { ProfesorPanelPage } from './pages/ProfesorPanelPage';
 import { HomePage } from './pages/HomePage';
 import { Navbar } from './components/Navbar';
-import { CursoDetallePage } from './pages/CursoDetalle';
-import { MisCursosPage } from './pages/MisCursosPage';
-import { AulaVirtualPage } from './pages/AulaVirtualPage';
-import { NotificacionesPage } from './pages/NotificacionesPage';
 import { ProtectedRoute } from './components/ProtectedRoute'; 
-import { SolicitarRecuperacionPage } from './pages/SolicitarRecuperacion';
-import { CambiarPasswordPage } from './pages/CambiarPasswordPage';
-import { VerificarCuentaPage } from './pages/VerificarCuentaPage';
-import { PerfilUsuarioPage } from './pages/PerfilUsuario';
-import { PagoExitoPage } from './pages/PagoExitoPage';
-import { PagoErrorPage } from './pages/PagoErrorPage';
-import { PagoPendientePage } from './pages/PagoPendientePage';
-import { CrearEvaluacion } from './components/CrearEvaluacion';
-import { RendirEvaluacion } from './components/RendirEvaluacion';
-import { CalendarioPage } from './components/CalendarioPages';
-import { InboxPage } from './pages/InboxPage';
 import { ChatLauncher } from './components/ChatLauncher';
+
+// Cada página se descarga recién cuando se visita (code splitting)
+const RegisterPage = lazy(() => import('./pages/RegisterPage').then((m) => ({ default: m.RegisterPage })));
+const PanelPage = lazy(() => import('./pages/PanelPage').then((m) => ({ default: m.PanelPage })));
+const ProfesorPanelPage = lazy(() => import('./pages/ProfesorPanelPage').then((m) => ({ default: m.ProfesorPanelPage })));
+const CursoDetallePage = lazy(() => import('./pages/CursoDetalle').then((m) => ({ default: m.CursoDetallePage })));
+const MisCursosPage = lazy(() => import('./pages/MisCursosPage').then((m) => ({ default: m.MisCursosPage })));
+const AulaVirtualPage = lazy(() => import('./pages/AulaVirtualPage').then((m) => ({ default: m.AulaVirtualPage })));
+const NotificacionesPage = lazy(() => import('./pages/NotificacionesPage').then((m) => ({ default: m.NotificacionesPage })));
+const SolicitarRecuperacionPage = lazy(() => import('./pages/SolicitarRecuperacion').then((m) => ({ default: m.SolicitarRecuperacionPage })));
+const CambiarPasswordPage = lazy(() => import('./pages/CambiarPasswordPage').then((m) => ({ default: m.CambiarPasswordPage })));
+const VerificarCuentaPage = lazy(() => import('./pages/VerificarCuentaPage').then((m) => ({ default: m.VerificarCuentaPage })));
+const PerfilUsuarioPage = lazy(() => import('./pages/PerfilUsuario').then((m) => ({ default: m.PerfilUsuarioPage })));
+const PagoExitoPage = lazy(() => import('./pages/PagoExitoPage').then((m) => ({ default: m.PagoExitoPage })));
+const PagoErrorPage = lazy(() => import('./pages/PagoErrorPage').then((m) => ({ default: m.PagoErrorPage })));
+const PagoPendientePage = lazy(() => import('./pages/PagoPendientePage').then((m) => ({ default: m.PagoPendientePage })));
+const CrearEvaluacion = lazy(() => import('./components/CrearEvaluacion').then((m) => ({ default: m.CrearEvaluacion })));
+const RendirEvaluacion = lazy(() => import('./components/RendirEvaluacion').then((m) => ({ default: m.RendirEvaluacion })));
+const CalendarioPage = lazy(() => import('./components/CalendarioPages').then((m) => ({ default: m.CalendarioPage })));
+const InboxPage = lazy(() => import('./pages/InboxPage').then((m) => ({ default: m.InboxPage })));
 
 // Al navegar sin recargar: vuelve arriba y reproduce un fundido de entrada en cada ruta nueva
 function TransicionRuta({ children }) {
@@ -31,7 +33,13 @@ function TransicionRuta({ children }) {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [pathname]);
-  return <div key={pathname} className="anim-aparecer">{children}</div>;
+  return (
+    <div key={pathname} className="anim-aparecer">
+      <Suspense fallback={<div className="mx-auto max-w-5xl px-6 py-10"><div className="skeleton h-64" /></div>}>
+        {children}
+      </Suspense>
+    </div>
+  );
 }
 
 function App() {

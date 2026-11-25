@@ -74,14 +74,12 @@ export const CursoDetallePage = () => {
         throw new Error("Clave pública de Mercado Pago no disponible");
       }
 
-      console.log("📝 Iniciando proceso de pago para curso:", curso.id);
       
       // 1. Crear preferencia en el backend
       const response = await clienteAxios.post('/pagos/crear-preferencia', {
         cursoId: curso.id
       });
 
-      console.log("✅ Preferencia creada:", response.data);
 
       // 2. Extraer la ID de la preferencia
       const preferenceId = response.data.id;

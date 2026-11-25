@@ -31,7 +31,6 @@ export const ProfesorPanelPage = () => {
       const response = await clienteAxios.get(`/profesor/cursos/${cursoId}/alumnos`);
       setAlumnos(response.data);
       setCursoSeleccionado(cursos.find(c => c.id === cursoId));
-      console.log('Alumnos cargados:', response.data);
     } catch (error) {
       console.error('Error al cargar los alumnos:', error);
       setAlumnos([]);
