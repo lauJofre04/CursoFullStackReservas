@@ -15,6 +15,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
 
 @Component
 public class RateLimitInterceptor implements HandlerInterceptor {
@@ -22,6 +23,8 @@ public class RateLimitInterceptor implements HandlerInterceptor {
     // Memoria caché para guardar el balde de cada dirección IP
     private final Map<String, Bucket> cache = new ConcurrentHashMap<>();
     private static final int MAX_ENTRADAS = 10_000;
+    // Solo caracteres válidos en IPv4/IPv6 y largo acotado: evita claves basura en el mapa
+    private static final Pattern FORMA_DE_IP = Pattern.compile("^[0-9a-fA-F:.]{3,45}$");
     private static final Logger log = LoggerFactory.getLogger(RateLimitInterceptor.class);
     private final AtomicBoolean diagnosticoRegistrado = new AtomicBoolean(false);
 
@@ -49,14 +52,28 @@ public class RateLimitInterceptor implements HandlerInterceptor {
         }
     }
 
+    // Render recibe el tráfico a través de Cloudflare: getRemoteAddr() devuelve una IP de Cloudflare
+    // (172.64.x.x, 104.x.x.x...) compartida por muchísimos usuarios, y Tomcat no la considera un proxy
+    // de confianza. Cloudflare AGREGA la IP real del cliente al final de X-Forwarded-For, así que se usa
+    // la ÚLTIMA entrada: lo que un atacante escriba en el header queda a la izquierda y se ignora.
+    // Si el header falta o no tiene forma de IP, se cae a getRemoteAddr().
+    static String resolverIpCliente(HttpServletRequest request) {
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+            String[] partes = forwardedFor.split(",");
+            String ultima = partes[partes.length - 1].trim();
+            if (FORMA_DE_IP.matcher(ultima).matches()) {
+                return ultima;
+            }
+        }
+        return request.getRemoteAddr();
+    }
+
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         
         
-        // Se usa SIEMPRE getRemoteAddr(), nunca el header X-Forwarded-For directo: el cliente puede
-        // falsificarlo y saltarse el límite. Detrás de un proxy (Render), Tomcat reemplaza remoteAddr por
-        // la IP real del cliente solo si el proxy es de confianza (server.forward-headers-strategy=native).
-        String ip = request.getRemoteAddr();
+        String ip = resolverIpCliente(request);
         registrarDiagnosticoUnaVez(ip, request.getHeader("X-Forwarded-For"));
 
         Bucket bucket = resolveBucket(ip);
