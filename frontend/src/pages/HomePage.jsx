@@ -184,7 +184,7 @@ export const HomePage = () => {
                           </span>
                         </div>
 
-                        <Link reloadDocument
+                        <Link
                           to={`/curso/${curso.id}`}
                           className="btn-glow w-full sm:w-auto inline-flex justify-center rounded-xl bg-blue-600 text-white px-4 py-3 font-semibold hover:bg-blue-700 shadow-sm shadow-blue-500/10"
                         >

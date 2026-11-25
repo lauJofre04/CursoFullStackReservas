@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
@@ -24,11 +25,21 @@ import { CalendarioPage } from './components/CalendarioPages';
 import { InboxPage } from './pages/InboxPage';
 import { ChatLauncher } from './components/ChatLauncher';
 
+// Al navegar sin recargar: vuelve arriba y reproduce un fundido de entrada en cada ruta nueva
+function TransicionRuta({ children }) {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return <div key={pathname} className="anim-aparecer">{children}</div>;
+}
+
 function App() {
   return (
     <BrowserRouter>
       <Navbar />
       <div className="min-h-screen bg-white dark:bg-gray-900 text-slate-900 dark:text-white transition-colors duration-300">
+        <TransicionRuta>
         <Routes>
           <Route path="/" element={<Navigate to="/home" replace />} />
           <Route path="/home" element={<HomePage />} />
@@ -99,6 +110,7 @@ function App() {
         <Route path="/pago/pendiente" element={<PagoPendientePage />} />
         <Route path="/mi-calendario" element={<CalendarioPage />} />
         </Routes>
+        </TransicionRuta>
       </div>
       <ChatLauncher />
       <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
