@@ -40,6 +40,25 @@ Para facilitar la revisión del sistema por parte de reclutadores y líderes té
 * **Motor de Evaluaciones:** Creación de exámenes dinámicos tipo *Multiple Choice* con calificación automática provista por el backend.
 * **Navegación Fluida:** Barra lateral dinámica en React para alternar entre lecciones sin recargas de página.
 
+## 🏗️ Arquitectura
+
+```mermaid
+flowchart LR
+  U([Alumno / Profesor / Admin]) --> FE[React 19 + Vite<br/>Vercel]
+  FE -- "REST + JWT" --> API[Spring Boot 4<br/>Render]
+  FE -- "WebSocket STOMP" --> WS[Chat y foro<br/>tiempo real]
+  API --- WS
+  API --> DB[(PostgreSQL)]
+  API --> RD[(Redis<br/>caché)]
+  API --> MP[Mercado Pago<br/>Checkout Pro + Webhook]
+  API --> CL[Cloudinary]
+  API --> RL{{"Rate limit<br/>Bucket4j"}}
+  FE --> G[Google OAuth]
+  FE --> SE[Sentry]
+```
+
+El pago se confirma por **webhook** (no por la redirección del navegador), y la matriculación se automatiza al recibirlo.
+
 ## 🛠️ Stack Tecnológico e Infraestructura
 
 **Frontend (Desplegado en Vercel):**
@@ -48,13 +67,15 @@ Para facilitar la revisión del sistema por parte de reclutadores y líderes té
 * Axios
 
 **Backend (Desplegado en Render):**
-* Java 17+ / Spring Boot 3
+* Java 17 / Spring Boot 4
 * Spring Security & JWT
 * Spring Data JPA / Hibernate
 * Manejo Global de Excepciones (`@ControllerAdvice`)
 
 **Base de Datos y Herramientas:**
 * PostgreSQL (Desplegado en Clever Cloud)
+* Redis (Upstash) para caché
+* Cloudinary (archivos y videos)
 * Mercado Pago API
 
 ## ⚙️ Instalación y Configuración Local
@@ -74,10 +95,11 @@ Si deseas auditar o correr este proyecto en tu entorno de desarrollo:
    * Inicia el servidor: `npm run dev`
 
 ## 🗺️ Roadmap (Próximos Pasos)
-- [ ] **Observabilidad:** Integración de Sentry para el monitoreo de errores en tiempo real y logs en producción.
-- [ ] **Fricción Cero:** Autenticación social (OAuth2) para permitir "Continuar con Google".
+- [x] **Observabilidad:** Sentry en el frontend.
+- [x] **Fricción cero:** inicio de sesión con Google.
 - [ ] **Búsqueda Avanzada:** Implementación de Fuzzy Search para tolerancia a errores tipográficos en el buscador de cursos.
-- [ ] **Notificaciones:** Integración de WebSockets para alertas en tiempo real dentro del Aula Virtual.
+- [x] **Tiempo real:** chat y foro por WebSocket (STOMP).
+- [ ] **Migraciones:** reemplazar `ddl-auto=update` por Flyway.
 
 ## 📩 Contacto
 
