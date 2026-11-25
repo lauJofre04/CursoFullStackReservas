@@ -14,10 +14,6 @@ export const PagoExitoPage = () => {
       const paymentId = searchParams.get('payment_id');
       const merchantOrderId = searchParams.get('merchant_order_id');
 
-      console.log('✅ Pago exitoso recibido');
-      console.log('Preference ID:', preferenceId);
-      console.log('Payment ID:', paymentId);
-      console.log('Merchant Order ID:', merchantOrderId);
 
       // Aquí puedes hacer una llamada al backend para:
       // 1. Registrar que el pago fue exitoso

@@ -232,7 +232,6 @@ export const GestorModulos = ({ cursoId, cursoTitulo }) => {
         }}
         moduloId={moduloIdParaTarea}
         onTareaCreada={() => {
-          console.log('Tarea creada con éxito para el módulo:', moduloIdParaTarea);
           // Opcional: Podrías hacer un toast o recargar algo si mostrás las tareas acá mismo en el futuro
         }}
       />
@@ -595,10 +594,8 @@ const GestorRecursos = ({ leccionId, leccionTitulo }) => {
           return;
         }
 
-        console.log("1. Pidiendo firma al backend...");
         const { data: firmaData } = await clienteAxios.get('/cloudinary/firma');
 
-        console.log("2. Subiendo archivo a Cloudinary...");
         const formData = new FormData();
         formData.append('file', archivo);
         formData.append('api_key', firmaData.api_key);
@@ -620,7 +617,6 @@ const GestorRecursos = ({ leccionId, leccionTitulo }) => {
 
         // Obtenemos la URL segura de Cloudinary
         urlFinal = resCloudinary.data.secure_url;
-        console.log("3. Archivo subido con éxito:", urlFinal);
       } else if (!urlFinal.trim()) {
         alert('La URL del enlace es obligatoria');
         setSubiendo(false);
